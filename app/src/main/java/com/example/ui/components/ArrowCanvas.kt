@@ -75,7 +75,7 @@ fun ArrowGameCanvas(
 
     val strokeWidthPx = with(density) { skin.strokeWidthDp.dp.toPx() }
     val headWingLengthPx = with(density) { skin.headWingLengthDp.dp.toPx() }
-    val hitRadiusPx = with(density) { 68.dp.toPx() } // Generous hit radius for responsive finger taps on 2x arrow
+    val hitRadiusPx = with(density) { 68.dp.toPx() }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val widthPx = with(density) { maxWidth.toPx() }
@@ -84,14 +84,12 @@ fun ArrowGameCanvas(
         // Recalculate arrow angle (FIXED IN SCREEN CENTER) whenever it becomes visible again
         LaunchedEffect(isArrowVisible, widthPx, heightPx) {
             if (isArrowVisible && widthPx > 100f && heightPx > 100f) {
-                // Double size arrow (2X length)
-                val maxAvailable = minOf(widthPx * 0.85f, heightPx * 0.55f)
+                val maxAvailable = minOf(widthPx * 0.82f, heightPx * 0.52f)
                 val arrowLength = maxAvailable.coerceIn(
-                    with(density) { 280.dp.toPx() },
-                    with(density) { 400.dp.toPx() }
+                    with(density) { 200.dp.toPx() },
+                    with(density) { 380.dp.toPx() }
                 )
 
-                // Fixed exactly in center
                 val cX = widthPx / 2f
                 val cY = heightPx / 2f
                 val angleDeg = Random.nextFloat() * 360f
@@ -143,7 +141,7 @@ fun ArrowGameCanvas(
         ) {
             if (isArrowVisible && arrowPos != null) {
                 val pos = arrowPos!!
-                drawCustomArrow(
+                drawSkinObject(
                     pos = pos,
                     skin = skin,
                     strokeWidthPx = strokeWidthPx,
@@ -156,7 +154,7 @@ fun ArrowGameCanvas(
     }
 }
 
-private fun DrawScope.drawCustomArrow(
+fun DrawScope.drawSkinObject(
     pos: ArrowPosition,
     skin: ArrowSkin,
     strokeWidthPx: Float,
@@ -166,9 +164,279 @@ private fun DrawScope.drawCustomArrow(
 ) {
     val angleRad = Math.toRadians(pos.angleDeg.toDouble())
     val wingAngleRad = Math.toRadians(skin.headWingAngleDeg.toDouble())
+    val perpAngleRad = angleRad + Math.PI / 2.0
 
-    // 1. Draw arrow main shaft
     when (skin.tailStyle) {
+        // 1. REALISTIC SNAKE: Wavy textured serpent body, scales pattern, viper head, snake eyes, and red strike tip
+        ArrowTailStyle.SNAKE_REALISTIC -> {
+            val segments = 32
+            val path = Path()
+            val waveAmp = strokeWidthPx * 0.9f
+            val waveFreq = 3.2
+
+            var prevPt: Offset? = null
+            for (i in 0..segments) {
+                val t = i.toFloat() / segments
+                val baseX = pos.tailX + (pos.tipX - pos.tailX) * t
+                val baseY = pos.tailY + (pos.tipY - pos.tailY) * t
+                // Sinusoidal serpentine slither
+                val waveOffset = (sin(t * Math.PI * 2.0 * waveFreq) * waveAmp * (1f - t * 0.3f)).toFloat()
+                val px = (baseX + waveOffset * cos(perpAngleRad)).toFloat()
+                val py = (baseY + waveOffset * sin(perpAngleRad)).toFloat()
+
+                if (i == 0) path.moveTo(px, py) else path.lineTo(px, py)
+                prevPt = Offset(px, py)
+            }
+
+            // Outer snake shadow/body
+            drawPath(
+                path = path,
+                color = Color(0xFF1B5E20),
+                style = Stroke(width = strokeWidthPx * 1.3f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+            )
+            // Mid vibrant green scales
+            drawPath(
+                path = path,
+                color = Color(0xFF4CAF50),
+                style = Stroke(width = strokeWidthPx * 0.85f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+            )
+            // Center snake spine/pattern dots
+            for (i in 2 until segments step 2) {
+                val t = i.toFloat() / segments
+                val baseX = pos.tailX + (pos.tipX - pos.tailX) * t
+                val baseY = pos.tailY + (pos.tipY - pos.tailY) * t
+                val waveOffset = (sin(t * Math.PI * 2.0 * waveFreq) * waveAmp * (1f - t * 0.3f)).toFloat()
+                val px = (baseX + waveOffset * cos(perpAngleRad)).toFloat()
+                val py = (baseY + waveOffset * sin(perpAngleRad)).toFloat()
+
+                drawCircle(
+                    color = Color(0xFFFFD54F),
+                    radius = strokeWidthPx * 0.22f,
+                    center = Offset(px, py)
+                )
+            }
+
+            // Snake Viper Head (Diamond shaped)
+            val headLen = strokeWidthPx * 2.2f
+            val headWid = strokeWidthPx * 1.5f
+            val hLeft = Offset(
+                (pos.tipX - headLen * 0.6f * cos(angleRad) + headWid * 0.6f * cos(perpAngleRad)).toFloat(),
+                (pos.tipY - headLen * 0.6f * sin(angleRad) + headWid * 0.6f * sin(perpAngleRad)).toFloat()
+            )
+            val hRight = Offset(
+                (pos.tipX - headLen * 0.6f * cos(angleRad) - headWid * 0.6f * cos(perpAngleRad)).toFloat(),
+                (pos.tipY - headLen * 0.6f * sin(angleRad) - headWid * 0.6f * sin(perpAngleRad)).toFloat()
+            )
+            val hBack = Offset(
+                (pos.tipX - headLen * cos(angleRad)).toFloat(),
+                (pos.tipY - headLen * sin(angleRad)).toFloat()
+            )
+            val viperHead = Path().apply {
+                moveTo(pos.tipX, pos.tipY)
+                lineTo(hLeft.x, hLeft.y)
+                lineTo(hBack.x, hBack.y)
+                lineTo(hRight.x, hRight.y)
+                close()
+            }
+            drawPath(path = viperHead, color = Color(0xFF2E7D32))
+
+            // Snake Eyes (Yellow venom eyes)
+            val eyeDist = strokeWidthPx * 0.35f
+            val eyeLeft = Offset(
+                (pos.tipX - headLen * 0.4f * cos(angleRad) + eyeDist * cos(perpAngleRad)).toFloat(),
+                (pos.tipY - headLen * 0.4f * sin(angleRad) + eyeDist * sin(perpAngleRad)).toFloat()
+            )
+            val eyeRight = Offset(
+                (pos.tipX - headLen * 0.4f * cos(angleRad) - eyeDist * cos(perpAngleRad)).toFloat(),
+                (pos.tipY - headLen * 0.4f * sin(angleRad) - eyeDist * sin(perpAngleRad)).toFloat()
+            )
+            drawCircle(color = Color(0xFFFFEB3B), radius = strokeWidthPx * 0.16f, center = eyeLeft)
+            drawCircle(color = Color(0xFFFFEB3B), radius = strokeWidthPx * 0.16f, center = eyeRight)
+            drawCircle(color = Color(0xFF000000), radius = strokeWidthPx * 0.08f, center = eyeLeft)
+            drawCircle(color = Color(0xFF000000), radius = strokeWidthPx * 0.08f, center = eyeRight)
+        }
+
+        // 2. RED TIP VECTOR BEAM: Long smooth minimalist line with hot red laser point (NO ARROW WINGS)
+        ArrowTailStyle.RED_TIP_BEAM -> {
+            // Shadow / outer track
+            drawLine(
+                color = Color(0xFFE0E0E0),
+                start = Offset(pos.tailX, pos.tailY),
+                end = Offset(pos.tipX, pos.tipY),
+                strokeWidth = strokeWidthPx * 1.5f,
+                cap = StrokeCap.Round
+            )
+            // Solid dark sleek shaft
+            drawLine(
+                color = skin.strokeColor,
+                start = Offset(pos.tailX, pos.tailY),
+                end = Offset(pos.tipX, pos.tipY),
+                strokeWidth = strokeWidthPx,
+                cap = StrokeCap.Round
+            )
+            // Red gradient along the front 30% of the line
+            val subTipX = (pos.tipX - (pos.tipX - pos.tailX) * 0.35f)
+            val subTipY = (pos.tipY - (pos.tipY - pos.tailY) * 0.35f)
+            drawLine(
+                brush = Brush.linearGradient(
+                    colors = listOf(Color.Transparent, Color(0xFFFF1744)),
+                    start = Offset(subTipX, subTipY),
+                    end = Offset(pos.tipX, pos.tipY)
+                ),
+                start = Offset(subTipX, subTipY),
+                end = Offset(pos.tipX, pos.tipY),
+                strokeWidth = strokeWidthPx * 1.1f,
+                cap = StrokeCap.Round
+            )
+        }
+
+        // 3. LIGHTNING BOLT: Jagged high-voltage electric bolt
+        ArrowTailStyle.LIGHTNING_BOLT -> {
+            val boltPath = Path()
+            boltPath.moveTo(pos.tailX, pos.tailY)
+
+            val segs = 6
+            var currentX = pos.tailX
+            var currentY = pos.tailY
+            val dx = (pos.tipX - pos.tailX) / segs
+            val dy = (pos.tipY - pos.tailY) / segs
+            val zigzagAmp = strokeWidthPx * 1.4f
+
+            for (i in 1 until segs) {
+                val side = if (i % 2 == 0) 1f else -1f
+                val targetX = pos.tailX + dx * i + (side * zigzagAmp * cos(perpAngleRad)).toFloat()
+                val targetY = pos.tailY + dy * i + (side * zigzagAmp * sin(perpAngleRad)).toFloat()
+                boltPath.lineTo(targetX, targetY)
+            }
+            boltPath.lineTo(pos.tipX, pos.tipY)
+
+            // Outer electric aura
+            drawPath(
+                path = boltPath,
+                color = Color(0xFFFFEA00).copy(alpha = 0.4f),
+                style = Stroke(width = strokeWidthPx * 2.2f, cap = StrokeCap.Round, join = StrokeJoin.Miter)
+            )
+            // Core lightning
+            drawPath(
+                path = boltPath,
+                color = Color(0xFFFFD600),
+                style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round, join = StrokeJoin.Miter)
+            )
+            // Center white hot line
+            drawPath(
+                path = boltPath,
+                color = Color.White,
+                style = Stroke(width = strokeWidthPx * 0.4f, cap = StrokeCap.Round, join = StrokeJoin.Miter)
+            )
+        }
+
+        // 4. DRAGON KATANA: Curved Samurai Sword blade with golden tsuba guard
+        ArrowTailStyle.DRAGON_KATANA -> {
+            // Blade shaft
+            drawLine(
+                brush = Brush.linearGradient(
+                    colors = listOf(Color(0xFF37474F), Color(0xFFCFD8DC), Color(0xFFECEFF1)),
+                    start = Offset(pos.tailX, pos.tailY),
+                    end = Offset(pos.tipX, pos.tipY)
+                ),
+                start = Offset(pos.tailX, pos.tailY),
+                end = Offset(pos.tipX, pos.tipY),
+                strokeWidth = strokeWidthPx * 1.1f,
+                cap = StrokeCap.Round
+            )
+            // Golden Katana Guard (Tsuba) at 25% from handle
+            val tsubaX = pos.tailX + (pos.tipX - pos.tailX) * 0.25f
+            val tsubaY = pos.tailY + (pos.tipY - pos.tailY) * 0.25f
+            val guardW = strokeWidthPx * 2.4f
+            val g1X = (tsubaX + guardW * 0.5f * cos(perpAngleRad)).toFloat()
+            val g1Y = (tsubaY + guardW * 0.5f * sin(perpAngleRad)).toFloat()
+            val g2X = (tsubaX - guardW * 0.5f * cos(perpAngleRad)).toFloat()
+            val g2Y = (tsubaY - guardW * 0.5f * sin(perpAngleRad)).toFloat()
+            drawLine(
+                color = Color(0xFFFFB300),
+                start = Offset(g1X, g1Y),
+                end = Offset(g2X, g2Y),
+                strokeWidth = strokeWidthPx * 0.65f,
+                cap = StrokeCap.Round
+            )
+            // Sharp Blade Head Tip
+            val w1Angle = angleRad + Math.PI - Math.toRadians(25.0)
+            val w1X = (pos.tipX + headWingLengthPx * 0.8f * cos(w1Angle)).toFloat()
+            val w1Y = (pos.tipY + headWingLengthPx * 0.8f * sin(w1Angle)).toFloat()
+            drawLine(
+                color = Color(0xFFCFD8DC),
+                start = Offset(w1X, w1Y),
+                end = Offset(pos.tipX, pos.tipY),
+                strokeWidth = strokeWidthPx * 0.9f,
+                cap = StrokeCap.Round
+            )
+        }
+
+        // 5. RAINBOW SPECTRUM: Prismatic chromatic beam
+        ArrowTailStyle.RAINBOW_HYPER -> {
+            val rainbowBrush = Brush.linearGradient(
+                colors = listOf(
+                    Color(0xFFFF1744),
+                    Color(0xFFFF9100),
+                    Color(0xFFFFEA00),
+                    Color(0xFF00E676),
+                    Color(0xFF00E5FF),
+                    Color(0xFF7C4DFF)
+                ),
+                start = Offset(pos.tailX, pos.tailY),
+                end = Offset(pos.tipX, pos.tipY)
+            )
+            drawLine(
+                brush = rainbowBrush,
+                start = Offset(pos.tailX, pos.tailY),
+                end = Offset(pos.tipX, pos.tipY),
+                strokeWidth = strokeWidthPx * 1.3f,
+                cap = StrokeCap.Round
+            )
+            // Arrow Head
+            drawClassicHead(pos, skin, headWingLengthPx, wingAngleRad, angleRad, strokeWidthPx)
+        }
+
+        // 6. MECHA RAILGUN: Cybernetic futuristic heavy chassis
+        ArrowTailStyle.MECHA_RAILGUN -> {
+            // Twin magnetic rails
+            val railOffset = strokeWidthPx * 0.55f
+            val r1StartX = (pos.tailX + railOffset * cos(perpAngleRad)).toFloat()
+            val r1StartY = (pos.tailY + railOffset * sin(perpAngleRad)).toFloat()
+            val r1EndX = (pos.tipX + railOffset * cos(perpAngleRad)).toFloat()
+            val r1EndY = (pos.tipY + railOffset * sin(perpAngleRad)).toFloat()
+
+            val r2StartX = (pos.tailX - railOffset * cos(perpAngleRad)).toFloat()
+            val r2StartY = (pos.tailY - railOffset * sin(perpAngleRad)).toFloat()
+            val r2EndX = (pos.tipX - railOffset * cos(perpAngleRad)).toFloat()
+            val r2EndY = (pos.tipY - railOffset * sin(perpAngleRad)).toFloat()
+
+            drawLine(
+                color = Color(0xFF37474F),
+                start = Offset(r1StartX, r1StartY),
+                end = Offset(r1EndX, r1EndY),
+                strokeWidth = strokeWidthPx * 0.5f,
+                cap = StrokeCap.Round
+            )
+            drawLine(
+                color = Color(0xFF37474F),
+                start = Offset(r2StartX, r2StartY),
+                end = Offset(r2EndX, r2EndY),
+                strokeWidth = strokeWidthPx * 0.5f,
+                cap = StrokeCap.Round
+            )
+            // Glowing core energy beam inside
+            drawLine(
+                color = Color(0xFF00E676),
+                start = Offset(pos.tailX, pos.tailY),
+                end = Offset(pos.tipX, pos.tipY),
+                strokeWidth = strokeWidthPx * 0.6f,
+                cap = StrokeCap.Round
+            )
+            drawClassicHead(pos, skin, headWingLengthPx * 0.8f, wingAngleRad, angleRad, strokeWidthPx)
+        }
+
+        // 7. NEON CYBER
         ArrowTailStyle.NEON_CYBER -> {
             drawLine(
                 color = skin.tipGlowColor.copy(alpha = 0.35f),
@@ -184,7 +452,10 @@ private fun DrawScope.drawCustomArrow(
                 strokeWidth = strokeWidthPx,
                 cap = StrokeCap.Round
             )
+            drawClassicHead(pos, skin, headWingLengthPx, wingAngleRad, angleRad, strokeWidthPx)
         }
+
+        // 8. GOLDEN CHROME
         ArrowTailStyle.GOLDEN_CHROME -> {
             drawLine(
                 brush = Brush.linearGradient(
@@ -197,7 +468,10 @@ private fun DrawScope.drawCustomArrow(
                 strokeWidth = strokeWidthPx,
                 cap = StrokeCap.Round
             )
+            drawClassicHead(pos, skin, headWingLengthPx, wingAngleRad, angleRad, strokeWidthPx)
         }
+
+        // 9. FIRE EMBER
         ArrowTailStyle.FIRE_EMBER -> {
             drawLine(
                 color = Color(0xFFFFAB00).copy(alpha = 0.35f),
@@ -217,7 +491,10 @@ private fun DrawScope.drawCustomArrow(
                 strokeWidth = strokeWidthPx,
                 cap = StrokeCap.Round
             )
+            drawClassicHead(pos, skin, headWingLengthPx, wingAngleRad, angleRad, strokeWidthPx)
         }
+
+        // 10. CLASSIC & REMAINING
         else -> {
             drawLine(
                 color = skin.strokeColor,
@@ -226,16 +503,76 @@ private fun DrawScope.drawCustomArrow(
                 strokeWidth = strokeWidthPx,
                 cap = StrokeCap.Round
             )
+            if (skin.headWingLengthDp > 0) {
+                drawClassicHead(pos, skin, headWingLengthPx, wingAngleRad, angleRad, strokeWidthPx)
+            }
         }
     }
 
-    // 2. Draw arrow head wings pointing backward from tip
+    // Optional tail feathers/accents for unique skins
+    if (skin.tailStyle == ArrowTailStyle.COSMIC_STAR || skin.tailStyle == ArrowTailStyle.STEALTH_OBSIDIAN) {
+        val tailWingLen = headWingLengthPx * 0.55f
+        val tailW1X = (pos.tailX + tailWingLen * cos(angleRad + wingAngleRad)).toFloat()
+        val tailW1Y = (pos.tailY + tailWingLen * sin(angleRad + wingAngleRad)).toFloat()
+        val tailW2X = (pos.tailX + tailWingLen * cos(angleRad - wingAngleRad)).toFloat()
+        val tailW2Y = (pos.tailY + tailWingLen * sin(angleRad - wingAngleRad)).toFloat()
+
+        drawLine(
+            color = skin.strokeColor,
+            start = Offset(pos.tailX, pos.tailY),
+            end = Offset(tailW1X, tailW1Y),
+            strokeWidth = strokeWidthPx * 0.75f,
+            cap = StrokeCap.Round
+        )
+        drawLine(
+            color = skin.strokeColor,
+            start = Offset(pos.tailX, pos.tailY),
+            end = Offset(tailW2X, tailW2Y),
+            strokeWidth = strokeWidthPx * 0.75f,
+            cap = StrokeCap.Round
+        )
+    }
+
+    // DRAW GLOWING TIP (THE CLICK TARGET!)
+    val glowRadiusPx = with(density) { skin.glowRadiusDp.dp.toPx() } * tipPulseScale
+    val coreRadiusPx = with(density) { 8.dp.toPx() }
+
+    // Outer soft glow halo
+    drawCircle(
+        color = skin.tipGlowColor.copy(alpha = 0.45f),
+        radius = glowRadiusPx,
+        center = Offset(pos.tipX, pos.tipY)
+    )
+
+    // Mid glow ring
+    drawCircle(
+        color = skin.tipGlowColor.copy(alpha = 0.85f),
+        radius = coreRadiusPx * 1.4f,
+        center = Offset(pos.tipX, pos.tipY)
+    )
+
+    // Vibrant hot center core
+    drawCircle(
+        color = skin.tipCenterColor,
+        radius = coreRadiusPx,
+        center = Offset(pos.tipX, pos.tipY)
+    )
+}
+
+private fun DrawScope.drawClassicHead(
+    pos: ArrowPosition,
+    skin: ArrowSkin,
+    headWingLengthPx: Float,
+    wingAngleRad: Double,
+    angleRad: Double,
+    strokeWidthPx: Float
+) {
+    if (headWingLengthPx <= 0) return
     val wing1Angle = angleRad + Math.PI - wingAngleRad
     val wing2Angle = angleRad + Math.PI + wingAngleRad
 
     val w1X = (pos.tipX + headWingLengthPx * cos(wing1Angle)).toFloat()
     val w1Y = (pos.tipY + headWingLengthPx * sin(wing1Angle)).toFloat()
-
     val w2X = (pos.tipX + headWingLengthPx * cos(wing2Angle)).toFloat()
     val w2Y = (pos.tipY + headWingLengthPx * sin(wing2Angle)).toFloat()
 
@@ -265,54 +602,5 @@ private fun DrawScope.drawCustomArrow(
             cap = StrokeCap.Round,
             join = StrokeJoin.Round
         )
-    )
-
-    // Optional tail feathers/accents for unique skins
-    if (skin.tailStyle == ArrowTailStyle.COSMIC_STAR || skin.tailStyle == ArrowTailStyle.STEALTH_OBSIDIAN) {
-        val tailWingLen = headWingLengthPx * 0.55f
-        val tailW1X = (pos.tailX + tailWingLen * cos(angleRad + wingAngleRad)).toFloat()
-        val tailW1Y = (pos.tailY + tailWingLen * sin(angleRad + wingAngleRad)).toFloat()
-        val tailW2X = (pos.tailX + tailWingLen * cos(angleRad - wingAngleRad)).toFloat()
-        val tailW2Y = (pos.tailY + tailWingLen * sin(angleRad - wingAngleRad)).toFloat()
-
-        drawLine(
-            color = skin.strokeColor,
-            start = Offset(pos.tailX, pos.tailY),
-            end = Offset(tailW1X, tailW1Y),
-            strokeWidth = strokeWidthPx * 0.75f,
-            cap = StrokeCap.Round
-        )
-        drawLine(
-            color = skin.strokeColor,
-            start = Offset(pos.tailX, pos.tailY),
-            end = Offset(tailW2X, tailW2Y),
-            strokeWidth = strokeWidthPx * 0.75f,
-            cap = StrokeCap.Round
-        )
-    }
-
-    // 3. Draw glowing tip dot
-    val glowRadiusPx = with(density) { skin.glowRadiusDp.dp.toPx() } * tipPulseScale
-    val coreRadiusPx = with(density) { 8.dp.toPx() }
-
-    // Outer soft glow halo
-    drawCircle(
-        color = skin.tipGlowColor.copy(alpha = 0.4f),
-        radius = glowRadiusPx,
-        center = Offset(pos.tipX, pos.tipY)
-    )
-
-    // Mid glow ring
-    drawCircle(
-        color = skin.tipGlowColor.copy(alpha = 0.85f),
-        radius = coreRadiusPx * 1.4f,
-        center = Offset(pos.tipX, pos.tipY)
-    )
-
-    // Vibrant hot center core
-    drawCircle(
-        color = skin.tipCenterColor,
-        radius = coreRadiusPx,
-        center = Offset(pos.tipX, pos.tipY)
     )
 }

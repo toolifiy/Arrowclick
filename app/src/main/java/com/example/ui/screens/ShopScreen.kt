@@ -56,9 +56,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
@@ -67,7 +64,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.ArrowSkin
 import com.example.model.ArrowSkinCatalog
-import com.example.model.ArrowTailStyle
+import com.example.ui.components.ArrowPosition
+import com.example.ui.components.drawSkinObject
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -162,7 +160,7 @@ fun ShopScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "AVAILABLE DESIGNS",
+                text = "AVAILABLE DESIGNS (${ArrowSkinCatalog.allSkins.size})",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.5.sp,
@@ -308,7 +306,7 @@ private fun SkinItemCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Mini Arrow Canvas Preview
+            // Mini Preview Canvas
             Box(
                 modifier = Modifier
                     .size(56.dp)
@@ -459,49 +457,24 @@ fun SingleArrowStaticCanvas(
         val tailX = (cX - halfL * cos(angleRad)).toFloat()
         val tailY = (cY - halfL * sin(angleRad)).toFloat()
 
-        val wingAngleRad = Math.toRadians(skin.headWingAngleDeg.toDouble())
-        val w1Angle = angleRad + Math.PI - wingAngleRad
-        val w2Angle = angleRad + Math.PI + wingAngleRad
-
-        val w1X = (tipX + headWingLengthPx * cos(w1Angle)).toFloat()
-        val w1Y = (tipY + headWingLengthPx * sin(w1Angle)).toFloat()
-        val w2X = (tipX + headWingLengthPx * cos(w2Angle)).toFloat()
-        val w2Y = (tipY + headWingLengthPx * sin(w2Angle)).toFloat()
-
-        // Draw shaft
-        drawLine(
-            color = skin.strokeColor,
-            start = Offset(tailX, tailY),
-            end = Offset(tipX, tipY),
-            strokeWidth = strokeWidthPx,
-            cap = StrokeCap.Round
+        val pos = ArrowPosition(
+            centerX = cX,
+            centerY = cY,
+            angleDeg = angleDeg,
+            lengthPx = arrowLength,
+            tipX = tipX,
+            tipY = tipY,
+            tailX = tailX,
+            tailY = tailY
         )
 
-        // Draw head
-        val headPath = Path().apply {
-            moveTo(w1X, w1Y)
-            lineTo(tipX, tipY)
-            lineTo(w2X, w2Y)
-        }
-        drawPath(
-            path = headPath,
-            color = skin.strokeColor,
-            style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
-        )
-
-        // Draw Tip
-        val glowR = with(density) { (skin.glowRadiusDp * scaleFactor).coerceAtLeast(4f).dp.toPx() }
-        val coreR = with(density) { (6f * scaleFactor).coerceAtLeast(2.5f).dp.toPx() }
-
-        drawCircle(
-            color = skin.tipGlowColor.copy(alpha = 0.5f),
-            radius = glowR,
-            center = Offset(tipX, tipY)
-        )
-        drawCircle(
-            color = skin.tipCenterColor,
-            radius = coreR,
-            center = Offset(tipX, tipY)
+        drawSkinObject(
+            pos = pos,
+            skin = skin,
+            strokeWidthPx = strokeWidthPx,
+            headWingLengthPx = headWingLengthPx,
+            tipPulseScale = 1.0f,
+            density = density
         )
     }
 }
