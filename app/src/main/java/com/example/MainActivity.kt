@@ -71,6 +71,7 @@ fun MainAppContent(viewModel: GameViewModel) {
     val soundEnabled by viewModel.soundEnabled.collectAsState()
     val hapticEnabled by viewModel.hapticEnabled.collectAsState()
     val hearts by viewModel.hearts.collectAsState()
+    val heartsDepletedTime by viewModel.heartsDepletedTime.collectAsState()
 
     // Handle back button on Android to return to Home screen
     BackHandler(enabled = uiState.screen != AppScreen.HOME) {
@@ -133,6 +134,7 @@ fun MainAppContent(viewModel: GameViewModel) {
                         onResetStats = { viewModel.resetStats() },
                         onStartGame = { viewModel.navigateTo(AppScreen.GAME) },
                         onOpenShop = { viewModel.navigateTo(AppScreen.SHOP) },
+                        heartsDepletedTime = heartsDepletedTime,
                         modifier = screenModifier
                     )
                 }
@@ -161,6 +163,7 @@ fun MainAppContent(viewModel: GameViewModel) {
                             viewModel.onMissedTap(touchOffset)
                         },
                         onBackToHome = { viewModel.navigateTo(AppScreen.HOME) },
+                        heartsDepletedTime = heartsDepletedTime,
                         modifier = screenModifier
                     )
                 }

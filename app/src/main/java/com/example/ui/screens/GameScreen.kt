@@ -91,12 +91,39 @@ fun GameScreen(
     onTipClicked: (reactionTimeMs: Long, tipOffset: Offset) -> Unit,
     onMissClicked: (touchOffset: Offset) -> Unit,
     onBackToHome: () -> Unit,
+    heartsDepletedTime: Long = 0L,
     modifier: Modifier = Modifier
 ) {
     val view = LocalView.current
     var liveSpawnTimeMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var liveElapsedMs by remember { mutableLongStateOf(0L) }
     var showExitConfirmation by remember { mutableStateOf(false) }
+
+    // Dynamic 24-hour timer calculation
+    var remainingSeconds by remember(heartsDepletedTime, hearts) {
+        mutableStateOf(0L)
+    }
+    LaunchedEffect(heartsDepletedTime, hearts) {
+        if (hearts == 0 && heartsDepletedTime > 0L) {
+            while (true) {
+                val elapsed = System.currentTimeMillis() - heartsDepletedTime
+                val left = (24L * 60 * 60 * 1000L - elapsed).coerceAtLeast(0L)
+                remainingSeconds = left / 1000L
+                delay(1000L)
+            }
+        } else {
+            remainingSeconds = 0L
+        }
+    }
+
+    val timerString = if (hearts == 0 && remainingSeconds > 0L) {
+        val hours = remainingSeconds / 3600
+        val minutes = (remainingSeconds % 3600) / 60
+        val secs = remainingSeconds % 60
+        String.format(Locale.US, "%02d:%02d:%02d", hours, minutes, secs)
+    } else {
+        ""
+    }
 
     // Fast real-time live timer loop ticking every ~16ms while the arrow is waiting for tap
     LaunchedEffect(isArrowVisible, liveSpawnTimeMs) {
@@ -185,16 +212,16 @@ fun GameScreen(
                 )
             }
 
-            // Right: Hearts and Coins Badges Side-By-Side
+            // Right: Hearts and Coins Badges Side-By-Side (halka dark curved boxes)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier.align(Alignment.CenterEnd)
             ) {
-                // Hearts Badge
+                // Hearts Badge (halka dark curved box)
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = Color(0xFFFFF0F2),
+                    color = Color(0xFF222226), // halka dark curved box
                     shadowElevation = 0.dp
                 ) {
                     Row(
@@ -210,15 +237,33 @@ fun GameScreen(
                             text = "$hearts/5",
                             fontSize = if (isCompactScreen) 12.sp else 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFE91E63)
+                            color = Color(0xFFFF4081) // Beautiful bright pink for high contrast on dark
                         )
+                        
+                        // Timer next to hearts if hearts == 0
+                        if (hearts == 0 && remainingSeconds > 0L) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "|",
+                                fontSize = if (isCompactScreen) 12.sp else 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF55555C)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = timerString,
+                                fontSize = if (isCompactScreen) 11.sp else 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFFFFD54F) // Glowing gold color for the timer
+                            )
+                        }
                     }
                 }
 
-                // Coins Badge
+                // Coins Badge (halka dark curved box)
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = Color(0xFFF5F5F7),
+                    color = Color(0xFF222226), // halka dark curved box
                     shadowElevation = 0.dp
                 ) {
                     Row(
@@ -231,7 +276,7 @@ fun GameScreen(
                             text = "$coins",
                             fontSize = if (isCompactScreen) 13.sp else 15.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF222222)
+                            color = Color.White // White text for contrast on dark
                         )
                     }
                 }

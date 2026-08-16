@@ -48,6 +48,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     val soundEnabled: StateFlow<Boolean> = repository.soundEnabled
     val hapticEnabled: StateFlow<Boolean> = repository.hapticEnabled
     val hearts: StateFlow<Int> = repository.hearts
+    val heartsDepletedTime: StateFlow<Long> = repository.heartsDepletedTime
 
     val equippedSkin: StateFlow<ArrowSkin> = repository.equippedSkinId
         .combine(repository.unlockedSkinIds) { id, _ ->
@@ -142,19 +143,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         respawnJob?.cancel()
         soundManager.playMissFeedback()
 
-        // Deduct 1 Heart
-        val hadHeart = repository.useHeart()
-        val remainingHearts = repository.hearts.value
+        val currentHearts = repository.hearts.value
+        if (currentHearts > 0) {
+            // Deduct 1 Heart
+            repository.useHeart()
 
-        if (!hadHeart || remainingHearts <= 0) {
-            // Out of hearts completely! Trigger the circular red loading countdown
-            _uiState.value = _uiState.value.copy(
-                isArrowVisible = false,
-                showReactionOverlay = false,
-                showCoinPopup = false,
-                showOutPopup = true
-            )
-        } else {
             // Heart deducted, respawn next arrow in 500ms
             _uiState.value = _uiState.value.copy(
                 isArrowVisible = false,
@@ -167,21 +160,19 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     isArrowVisible = true
                 )
             }
+        } else {
+            // Out of hearts completely! Show the animated broken heart popup
+            _uiState.value = _uiState.value.copy(
+                isArrowVisible = false,
+                showReactionOverlay = false,
+                showCoinPopup = false,
+                showOutPopup = true
+            )
         }
     }
 
     fun onTailHit(offset: Offset) {
-        respawnJob?.cancel()
-        soundManager.playMissFeedback()
-
-        // Tail hit triggers INSTANT OUT! Deplete remaining hearts to 0 and show countdown
-        repository.setHearts(0)
-        _uiState.value = _uiState.value.copy(
-            isArrowVisible = false,
-            showReactionOverlay = false,
-            showCoinPopup = false,
-            showOutPopup = true
-        )
+        onMissedTap(offset)
     }
 
     fun triggerMockAd() {

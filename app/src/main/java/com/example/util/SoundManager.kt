@@ -53,24 +53,18 @@ class SoundManager(private val context: Context) {
     }
 
     fun playSpawnTick() {
-        if (isMuted) return
-        thread(start = true) {
-            synthesizeAndPlay(1200.0, 22)
-        }
+        // Silent as requested - no sounds or sound effects
     }
 
     fun playSuccessTick() {
         if (isMuted) return
         thread(start = true) {
-            synthesizeAndPlay(1900.0, 50)
+            synthesizeAndPlay(2000.0, 35)
         }
     }
 
     fun playErrorTick() {
-        if (isMuted) return
-        thread(start = true) {
-            synthesizeAndPlay(350.0, 110)
-        }
+        // Silent as requested - no sounds or sound effects
     }
 
     private fun synthesizeAndPlay(frequency: Double, durationMs: Int) {

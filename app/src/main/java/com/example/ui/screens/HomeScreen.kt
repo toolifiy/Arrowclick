@@ -41,10 +41,12 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -73,10 +75,37 @@ fun HomeScreen(
     onResetStats: () -> Unit,
     onStartGame: () -> Unit,
     onOpenShop: () -> Unit,
+    heartsDepletedTime: Long = 0L,
     modifier: Modifier = Modifier
 ) {
     val view = LocalView.current
     var showSettingsDialog by remember { mutableStateOf(false) }
+
+    // Dynamic 24-hour timer calculation
+    var remainingSeconds by remember(heartsDepletedTime, hearts) {
+        mutableStateOf(0L)
+    }
+    LaunchedEffect(heartsDepletedTime, hearts) {
+        if (hearts == 0 && heartsDepletedTime > 0L) {
+            while (true) {
+                val elapsed = System.currentTimeMillis() - heartsDepletedTime
+                val left = (24L * 60 * 60 * 1000L - elapsed).coerceAtLeast(0L)
+                remainingSeconds = left / 1000L
+                delay(1000L)
+            }
+        } else {
+            remainingSeconds = 0L
+        }
+    }
+
+    val timerString = if (hearts == 0 && remainingSeconds > 0L) {
+        val hours = remainingSeconds / 3600
+        val minutes = (remainingSeconds % 3600) / 60
+        val secs = remainingSeconds % 60
+        String.format(Locale.US, "%02d:%02d:%02d", hours, minutes, secs)
+    } else {
+        ""
+    }
 
     val infiniteTransition = rememberInfiniteTransition(label = "home_arrow_spin")
     val rotationDeg by infiniteTransition.animateFloat(
@@ -146,10 +175,10 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    // Hearts Badge / Chip
+                    // Hearts Badge / Chip (halka dark curved box)
                     Surface(
                         shape = RoundedCornerShape(20.dp),
-                        color = Color(0xFFFFF0F2),
+                        color = Color(0xFF222226), // halka dark curved box
                         shadowElevation = 0.dp,
                         modifier = Modifier.testTag("home_hearts_chip")
                     ) {
@@ -166,15 +195,33 @@ fun HomeScreen(
                                 text = "$hearts/5",
                                 fontSize = if (isCompactScreen) 13.sp else 15.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFFE91E63)
+                                color = Color(0xFFFF4081) // Beautiful bright pink for high contrast on dark
                             )
+                            
+                            // Timer next to hearts if hearts == 0
+                            if (hearts == 0 && remainingSeconds > 0L) {
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "|",
+                                    fontSize = if (isCompactScreen) 13.sp else 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF55555C)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = timerString,
+                                    fontSize = if (isCompactScreen) 12.sp else 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFFFFD54F) // Glowing gold color for the timer
+                                )
+                            }
                         }
                     }
 
-                    // Vibrant Golden Coins Chip
+                    // Vibrant Golden Coins Chip (halka dark curved box)
                     Surface(
                         shape = RoundedCornerShape(20.dp),
-                        color = Color(0xFFF5F5F7),
+                        color = Color(0xFF222226), // halka dark curved box
                         shadowElevation = 0.dp,
                         modifier = Modifier
                             .clickable {
@@ -193,7 +240,7 @@ fun HomeScreen(
                                 text = "$coins",
                                 fontSize = if (isCompactScreen) 14.sp else 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF111111)
+                                color = Color.White // White text for contrast on dark
                             )
                         }
                     }
