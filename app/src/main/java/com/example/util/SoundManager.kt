@@ -13,8 +13,8 @@ import android.os.VibratorManager
 import kotlin.concurrent.thread
 
 /**
- * Clean Sound & Haptic Manager using Android SoundPool with synthesized audio beeps
- * and system vibrations.
+ * Premium synthesized Sound & Haptic Manager utilizing Android AudioTrack
+ * for low-latency, responsive gameplay sounds without external file dependencies.
  */
 class SoundManager(private val context: Context) {
 
@@ -52,10 +52,17 @@ class SoundManager(private val context: Context) {
         isHapticDisabled = !enabled
     }
 
+    /**
+     * Completely silent on arrow spawn as explicitly requested.
+     */
     fun playSpawnTick() {
-        // Silent as requested - no sounds or sound effects
+        // Silent - no sounds on arrow spawn!
     }
 
+    /**
+     * Crisp, ultra-short, highly satisfying "tik/tak" click sound.
+     * Only plays on correct target clicks.
+     */
     fun playSuccessTick() {
         if (isMuted) return
         thread(start = true) {
@@ -65,7 +72,7 @@ class SoundManager(private val context: Context) {
 
     private fun synthesizeAndPlaySuccessClick() {
         val sampleRate = 44100
-        val durationMs = 120
+        val durationMs = 45 // Super responsive and short
         val numSamples = (durationMs * sampleRate / 1000)
         val sample = DoubleArray(numSamples)
         val generatedSnd = ShortArray(numSamples)
@@ -73,28 +80,15 @@ class SoundManager(private val context: Context) {
         for (i in 0 until numSamples) {
             val t = i.toDouble() / sampleRate
             val progress = i.toDouble() / numSamples
-            
-            // Sweet arcade metallic bell / high quality ping tick
-            // Sweeps UP slightly from 880Hz to 1100Hz (highly rewarding and satisfying)
-            val freq1 = 880.0 + (220.0 * progress)
-            // Harmonious overtone at 1.5x (perfect fifth) and 2.0x (perfect octave) for rich timbre
-            val freq2 = freq1 * 1.5
-            val freq3 = freq1 * 2.0
 
-            val phase1 = 2.0 * Math.PI * freq1 * t
-            val phase2 = 2.0 * Math.PI * freq2 * t
-            val phase3 = 2.0 * Math.PI * freq3 * t
+            // Frequency sweeps downward from 1200Hz to 800Hz for a crisp woodblock "tik" sound
+            val freq = 1200.0 - (400.0 * progress)
+            val phase = 2.0 * Math.PI * freq * t
 
-            // Exponential decay for clean, bell-like ping
-            val envelope = if (progress < 0.05) {
-                progress / 0.05 // ultra fast attack (2ms)
-            } else {
-                Math.exp(-6.5 * (progress - 0.05)) // beautiful bell decay
-            }
+            // Exponential decay envelope for snappy attack and instant release
+            val envelope = Math.exp(-9.0 * progress)
 
-            // Mix frequencies for a crisp, high-quality, metallic-wooden chime (Perfect Tap Sound)
-            val wave = 0.5 * Math.sin(phase1) + 0.35 * Math.sin(phase2) + 0.15 * Math.sin(phase3)
-            sample[i] = wave * envelope
+            sample[i] = Math.sin(phase) * envelope
         }
 
         for (i in 0 until numSamples) {
@@ -113,54 +107,153 @@ class SoundManager(private val context: Context) {
             audioTrack.write(generatedSnd, 0, generatedSnd.size)
             audioTrack.play()
 
-            Thread.sleep(durationMs + 40L)
+            Thread.sleep(durationMs + 10L)
+            audioTrack.stop()
+            audioTrack.release()
+        } catch (_: Exception) {}
+    }
+
+    /**
+     * Loud, harsh, dissonant "BZZZT" warning sound played only on wrong clicks
+     * to signal heart loss.
+     */
+    fun playWrongClick() {
+        if (isMuted) return
+        thread(start = true) {
+            synthesizeAndPlayWrongClick()
+        }
+    }
+
+    private fun synthesizeAndPlayWrongClick() {
+        val sampleRate = 44100
+        val durationMs = 220
+        val numSamples = (durationMs * sampleRate / 1000)
+        val sample = DoubleArray(numSamples)
+        val generatedSnd = ShortArray(numSamples)
+
+        for (i in 0 until numSamples) {
+            val t = i.toDouble() / sampleRate
+            val progress = i.toDouble() / numSamples
+
+            // Combine two dissonant frequencies (135Hz and 185Hz) to make a harsh buzz/error sound
+            val f1 = 135.0
+            val f2 = 185.0
+            
+            // Generate raw harsh square wave-like signal using sinusoids
+            val w1 = Math.sin(2.0 * Math.PI * f1 * t)
+            val w2 = Math.sin(2.0 * Math.PI * f2 * t)
+            
+            // Mix with some high-frequency buzzing harmonics
+            val w3 = 0.3 * Math.sin(2.0 * Math.PI * (f1 * 3) * t)
+
+            // Linear decay envelope for warning impact
+            val envelope = (1.0 - progress) * 0.85
+
+            sample[i] = (0.45 * w1 + 0.45 * w2 + 0.1 * w3) * envelope
+        }
+
+        for (i in 0 until numSamples) {
+            generatedSnd[i] = (sample[i] * 32767).toInt().toShort()
+        }
+
+        try {
+            val audioTrack = AudioTrack(
+                AudioManager.STREAM_MUSIC,
+                sampleRate,
+                AudioFormat.CHANNEL_OUT_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                generatedSnd.size * 2,
+                AudioTrack.MODE_STATIC
+            )
+            audioTrack.write(generatedSnd, 0, generatedSnd.size)
+            audioTrack.play()
+
+            Thread.sleep(durationMs + 20L)
+            audioTrack.stop()
+            audioTrack.release()
+        } catch (_: Exception) {}
+    }
+
+    /**
+     * Custom 0.5s multi-stage retro-arcade Game Over drama crash sound.
+     * Sounds like "dhidhid dhudhum tadak!"
+     * Divided into:
+     * - Phase 1 (0 to 150ms): "dhidhid" rapid pitch roll
+     * - Phase 2 (150ms to 320ms): "dhudhum" deep heavy bass boom
+     * - Phase 3 (320ms to 500ms): "tadak" sharp metallic crunch smash
+     */
+    fun playGameOverSound() {
+        if (isMuted) return
+        thread(start = true) {
+            synthesizeAndPlayGameOver()
+        }
+    }
+
+    private fun synthesizeAndPlayGameOver() {
+        val sampleRate = 44100
+        val durationMs = 500 // Exactly 0.5 seconds
+        val numSamples = (durationMs * sampleRate / 1000)
+        val sample = DoubleArray(numSamples)
+        val generatedSnd = ShortArray(numSamples)
+
+        val cut1 = (150 * sampleRate / 1000)
+        val cut2 = (320 * sampleRate / 1000)
+
+        for (i in 0 until numSamples) {
+            val t = i.toDouble() / sampleRate
+
+            if (i < cut1) {
+                // 1. "dhidhid": Rapid pulsating low-frequency roll
+                val rollProgress = i.toDouble() / cut1
+                // Pulsate volume every 35ms (using absolute sine)
+                val pulse = Math.abs(Math.sin(2.0 * Math.PI * 28.0 * t))
+                val freq = 90.0 + (50.0 * rollProgress)
+                val wave = Math.sin(2.0 * Math.PI * freq * t)
+                sample[i] = wave * pulse * 0.75
+            } else if (i < cut2) {
+                // 2. "dhudhum": Deep heavy bass sweep boom
+                val boomProgress = (i - cut1).toDouble() / (cut2 - cut1)
+                // Sweeps down from 140Hz to 45Hz
+                val freq = 140.0 - (95.0 * boomProgress)
+                val envelope = Math.exp(-4.5 * boomProgress)
+                val wave = Math.sin(2.0 * Math.PI * freq * t)
+                sample[i] = wave * envelope * 0.9
+            } else {
+                // 3. "tadak": Sharp metallic high-pitched smash/crunch
+                val smashProgress = (i - cut2).toDouble() / (numSamples - cut2)
+                // Sweeps down from 1600Hz to 300Hz with noise crackle
+                val freq = 1600.0 - (1300.0 * smashProgress)
+                val envelope = (1.0 - smashProgress) * 0.8
+                // Add pseudo-random metallic crackle noise
+                val noise = Math.sin(2.0 * Math.PI * freq * t) * (1.0 + 0.35 * Math.sin(2.0 * Math.PI * 4500.0 * t))
+                sample[i] = noise * envelope * 0.65
+            }
+        }
+
+        for (i in 0 until numSamples) {
+            generatedSnd[i] = (sample[i] * 32767).toInt().toShort()
+        }
+
+        try {
+            val audioTrack = AudioTrack(
+                AudioManager.STREAM_MUSIC,
+                sampleRate,
+                AudioFormat.CHANNEL_OUT_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                generatedSnd.size * 2,
+                AudioTrack.MODE_STATIC
+            )
+            audioTrack.write(generatedSnd, 0, generatedSnd.size)
+            audioTrack.play()
+
+            Thread.sleep(durationMs + 30L)
             audioTrack.stop()
             audioTrack.release()
         } catch (_: Exception) {}
     }
 
     fun playErrorTick() {
-        // Silent as requested - no sounds or sound effects
-    }
-
-    private fun synthesizeAndPlay(frequency: Double, durationMs: Int) {
-        val sampleRate = 44100
-        val numSamples = (durationMs * sampleRate / 1000)
-        val sample = DoubleArray(numSamples)
-        val generatedSnd = ShortArray(numSamples)
-
-        for (i in 0 until numSamples) {
-            val envelope = if (i < numSamples * 0.15) {
-                i / (numSamples * 0.15)
-            } else if (i > numSamples * 0.70) {
-                (numSamples - i) / (numSamples * 0.30)
-            } else {
-                1.0
-            }
-            sample[i] = Math.sin(2.0 * Math.PI * i / (sampleRate / frequency)) * envelope
-        }
-
-        for (i in 0 until numSamples) {
-            generatedSnd[i] = (sample[i] * 32767).toInt().toShort()
-        }
-
-        try {
-            val audioTrack = AudioTrack(
-                AudioManager.STREAM_MUSIC,
-                sampleRate,
-                AudioFormat.CHANNEL_OUT_MONO,
-                AudioFormat.ENCODING_PCM_16BIT,
-                generatedSnd.size * 2,
-                AudioTrack.MODE_STATIC
-            )
-            audioTrack.write(generatedSnd, 0, generatedSnd.size)
-            audioTrack.play()
-
-            // Wait until done and release
-            Thread.sleep(durationMs + 60L)
-            audioTrack.stop()
-            audioTrack.release()
-        } catch (_: Exception) {}
+        // Kept for backward compatibility, completely silent.
     }
 
     fun playHitFeedback() {

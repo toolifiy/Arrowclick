@@ -73,6 +73,9 @@ fun MainAppContent(viewModel: GameViewModel) {
     val equippedDotId by viewModel.equippedDotId.collectAsState()
     val soundEnabled by viewModel.soundEnabled.collectAsState()
     val hapticEnabled by viewModel.hapticEnabled.collectAsState()
+    val showArrow by viewModel.showArrow.collectAsState()
+    val showDot by viewModel.showDot.collectAsState()
+    val alignCenter by viewModel.alignCenter.collectAsState()
     val hearts by viewModel.hearts.collectAsState()
 
     // Handle back button on Android to return to Home screen
@@ -131,8 +134,14 @@ fun MainAppContent(viewModel: GameViewModel) {
                         equippedSkin = equippedSkin,
                         soundEnabled = soundEnabled,
                         hapticEnabled = hapticEnabled,
+                        showArrow = showArrow,
+                        showDot = showDot,
+                        alignCenter = alignCenter,
                         onSoundToggle = { viewModel.setSoundEnabled(it) },
                         onHapticToggle = { viewModel.setHapticEnabled(it) },
+                        onShowArrowToggle = { viewModel.setShowArrow(it) },
+                        onShowDotToggle = { viewModel.setShowDot(it) },
+                        onAlignCenterToggle = { viewModel.setAlignCenter(it) },
                         onResetStats = { viewModel.resetStats() },
                         onStartGame = { viewModel.navigateTo(AppScreen.GAME) },
                         onOpenShop = { viewModel.navigateTo(AppScreen.SHOP) },
@@ -152,6 +161,9 @@ fun MainAppContent(viewModel: GameViewModel) {
                         lastHitOffset = uiState.lastHitOffset,
                         soundEnabled = soundEnabled,
                         hapticEnabled = hapticEnabled,
+                        showArrow = showArrow,
+                        showDot = showDot,
+                        alignCenter = alignCenter,
                         showOutPopup = uiState.showOutPopup,
                         showMockAd = uiState.showMockAd,
                         onArrowSpawned = { viewModel.onArrowSpawned() },

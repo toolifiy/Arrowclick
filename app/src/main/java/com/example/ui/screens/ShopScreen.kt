@@ -15,6 +15,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -118,12 +119,15 @@ fun ShopScreen(
         }
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(Color(0xFFFAFAFC))
             .testTag("shop_screen")
     ) {
+        val screenHeight = maxHeight
+        val isCompactScreen = screenHeight < 640.dp
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -268,16 +272,16 @@ fun ShopScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(if (isCompactScreen) 6.dp else 10.dp))
 
             // Hero Preview Banner Container
             if (activeTab == ShopTab.ARROW) {
-                ArrowPreviewHero(skin = previewSkin)
+                ArrowPreviewHero(skin = previewSkin, isCompact = isCompactScreen)
             } else {
-                DotPreviewHero(dot = previewDot)
+                DotPreviewHero(dot = previewDot, isCompact = isCompactScreen)
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(if (isCompactScreen) 8.dp else 14.dp))
 
             // Subtitle
             Text(
@@ -374,7 +378,7 @@ fun ShopScreen(
 }
 
 @Composable
-private fun ArrowPreviewHero(skin: ArrowSkin) {
+private fun ArrowPreviewHero(skin: ArrowSkin, isCompact: Boolean = false) {
     val infiniteTransition = rememberInfiniteTransition(label = "hero_rotate")
     val rotationDeg by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -387,7 +391,7 @@ private fun ArrowPreviewHero(skin: ArrowSkin) {
     )
 
     Card(
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(if (isCompact) 16.dp else 24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         border = BorderStroke(1.dp, Color(0x0F000000)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -398,13 +402,13 @@ private fun ArrowPreviewHero(skin: ArrowSkin) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(if (isCompact) 10.dp else 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
-                    .size(130.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .size(if (isCompact) 80.dp else 130.dp)
+                    .clip(RoundedCornerShape(12.dp))
                     .background(Color(0xFFFBFBFC)),
                 contentAlignment = Alignment.Center
             ) {
@@ -415,30 +419,32 @@ private fun ArrowPreviewHero(skin: ArrowSkin) {
                 )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(if (isCompact) 4.dp else 10.dp))
 
             Text(
                 text = skin.name,
-                fontSize = 18.sp,
+                fontSize = if (isCompact) 14.sp else 18.sp,
                 fontWeight = FontWeight.Black,
                 color = Color(0xFF111111)
             )
 
-            Spacer(modifier = Modifier.height(2.dp))
+            if (!isCompact) {
+                Spacer(modifier = Modifier.height(2.dp))
 
-            Text(
-                text = skin.description,
-                fontSize = 12.sp,
-                color = Color(0xFF666666),
-                textAlign = TextAlign.Center,
-                lineHeight = 16.sp
-            )
+                Text(
+                    text = skin.description,
+                    fontSize = 12.sp,
+                    color = Color(0xFF666666),
+                    textAlign = TextAlign.Center,
+                    lineHeight = 16.sp
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun DotPreviewHero(dot: DotSkin) {
+private fun DotPreviewHero(dot: DotSkin, isCompact: Boolean = false) {
     val infiniteTransition = rememberInfiniteTransition(label = "dot_hero")
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 0.85f,
@@ -451,7 +457,7 @@ private fun DotPreviewHero(dot: DotSkin) {
     )
 
     Card(
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(if (isCompact) 16.dp else 24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         border = BorderStroke(1.dp, Color(0x0F000000)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -462,13 +468,13 @@ private fun DotPreviewHero(dot: DotSkin) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(if (isCompact) 10.dp else 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
-                    .size(130.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .size(if (isCompact) 80.dp else 130.dp)
+                    .clip(RoundedCornerShape(12.dp))
                     .background(Color(0xFFFBFBFC)),
                 contentAlignment = Alignment.Center
             ) {
@@ -479,24 +485,26 @@ private fun DotPreviewHero(dot: DotSkin) {
                 )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(if (isCompact) 4.dp else 10.dp))
 
             Text(
                 text = dot.name,
-                fontSize = 18.sp,
+                fontSize = if (isCompact) 14.sp else 18.sp,
                 fontWeight = FontWeight.Black,
                 color = Color(0xFF111111)
             )
 
-            Spacer(modifier = Modifier.height(2.dp))
+            if (!isCompact) {
+                Spacer(modifier = Modifier.height(2.dp))
 
-            Text(
-                text = dot.description,
-                fontSize = 12.sp,
-                color = Color(0xFF666666),
-                textAlign = TextAlign.Center,
-                lineHeight = 16.sp
-            )
+                Text(
+                    text = dot.description,
+                    fontSize = 12.sp,
+                    color = Color(0xFF666666),
+                    textAlign = TextAlign.Center,
+                    lineHeight = 16.sp
+                )
+            }
         }
     }
 }
@@ -876,8 +884,8 @@ fun SingleDotStaticCanvas(
                 val radius = coreRadiusPx * 2.2f * pulseScale
                 for (i in 0..5) {
                     val angle = Math.toRadians((i * 60).toDouble())
-                    val hx = (cX + radius * cos(angle)).toFloat()
-                    val hy = (cY + radius * sin(angle)).toFloat()
+                    val hx = (cX + radius * Math.cos(angle)).toFloat()
+                    val hy = (cY + radius * Math.sin(angle)).toFloat()
                     if (i == 0) hexPath.moveTo(hx, hy) else hexPath.lineTo(hx, hy)
                 }
                 hexPath.close()
@@ -892,6 +900,153 @@ fun SingleDotStaticCanvas(
                     radius = coreRadiusPx,
                     center = centerOffset
                 )
+            }
+            com.example.model.DotStyle.ICE_CRYSTAL -> {
+                drawCircle(color = dot.glowColor.copy(alpha = 0.35f), radius = glowRadiusPx, center = centerOffset)
+                for (i in 0 until 6) {
+                    val ang = Math.toRadians((i * 60).toDouble())
+                    val rx = (cX + glowRadiusPx * Math.cos(ang)).toFloat()
+                    val ry = (cY + glowRadiusPx * Math.sin(ang)).toFloat()
+                    drawLine(color = dot.glowColor, start = centerOffset, end = Offset(rx, ry), strokeWidth = with(density) { 1.5.dp.toPx() })
+                }
+                drawCircle(color = dot.centerColor, radius = coreRadiusPx * 1.1f, center = centerOffset)
+            }
+            com.example.model.DotStyle.TOXIC_BIOHAZARD -> {
+                drawCircle(color = dot.glowColor.copy(alpha = 0.3f), radius = glowRadiusPx, center = centerOffset)
+                drawCircle(color = dot.glowColor, radius = coreRadiusPx * 1.8f, center = centerOffset, style = Stroke(width = with(density) { 2.dp.toPx() }))
+                drawCircle(color = dot.centerColor, radius = coreRadiusPx * 0.9f, center = centerOffset)
+            }
+            com.example.model.DotStyle.SHADOW_PORTAL -> {
+                drawCircle(color = dot.glowColor.copy(alpha = 0.3f), radius = glowRadiusPx * 1.1f, center = centerOffset)
+                drawCircle(color = dot.glowColor.copy(alpha = 0.6f), radius = glowRadiusPx * 0.75f, center = centerOffset, style = Stroke(width = with(density) { 2.5.dp.toPx() }))
+                drawCircle(color = Color(0xFF1A0033), radius = coreRadiusPx, center = centerOffset)
+            }
+            com.example.model.DotStyle.HEAVENLY_HALO -> {
+                drawCircle(color = dot.glowColor.copy(alpha = 0.3f), radius = glowRadiusPx, center = centerOffset)
+                drawCircle(color = dot.glowColor, radius = coreRadiusPx * 1.8f, center = centerOffset, style = Stroke(width = with(density) { 1.2.dp.toPx() }))
+                drawCircle(color = dot.centerColor, radius = coreRadiusPx * 0.8f, center = centerOffset)
+            }
+            com.example.model.DotStyle.GEAR_CLOCKWORK -> {
+                val rad = coreRadiusPx * 2f
+                for (i in 0 until 6) {
+                    val ang = Math.toRadians((i * 60).toDouble())
+                    val hx = (cX + rad * Math.cos(ang)).toFloat()
+                    val hy = (cY + rad * Math.sin(ang)).toFloat()
+                    drawCircle(color = dot.glowColor, radius = coreRadiusPx * 0.4f, center = Offset(hx, hy))
+                }
+                drawCircle(color = dot.glowColor, radius = rad, center = centerOffset, style = Stroke(width = with(density) { 1.5.dp.toPx() }))
+                drawCircle(color = dot.centerColor, radius = coreRadiusPx * 0.8f, center = centerOffset)
+            }
+            com.example.model.DotStyle.WATER_RIPPLE -> {
+                drawCircle(color = dot.glowColor.copy(alpha = 0.2f), radius = glowRadiusPx * 1.3f, center = centerOffset)
+                drawCircle(color = dot.glowColor.copy(alpha = 0.4f), radius = glowRadiusPx * 0.85f, center = centerOffset, style = Stroke(width = with(density) { 1.5.dp.toPx() }))
+                drawCircle(color = dot.centerColor, radius = coreRadiusPx, center = centerOffset)
+            }
+            com.example.model.DotStyle.SWEET_DONUT -> {
+                drawCircle(color = dot.glowColor, radius = coreRadiusPx * 2.1f, center = centerOffset)
+                drawCircle(color = Color(0xFF8D6E63), radius = coreRadiusPx * 2.1f, center = centerOffset, style = Stroke(width = with(density) { 2.dp.toPx() }))
+                drawCircle(color = Color.White, radius = coreRadiusPx * 0.65f, center = centerOffset)
+            }
+            com.example.model.DotStyle.CHROME_METAL -> {
+                drawCircle(color = Color(0xFFB0BEC5), radius = coreRadiusPx * 2f, center = centerOffset)
+                drawCircle(color = Color.White, radius = coreRadiusPx * 2f, center = centerOffset, style = Stroke(width = with(density) { 1.5.dp.toPx() }))
+                drawCircle(color = Color(0xFF37474F), radius = coreRadiusPx * 0.55f, center = centerOffset)
+            }
+            com.example.model.DotStyle.PIXEL_HEART -> {
+                drawCircle(color = dot.glowColor.copy(alpha = 0.35f), radius = glowRadiusPx, center = centerOffset)
+                val heartPath = Path().apply {
+                    moveTo(cX, cY + coreRadiusPx * 0.5f)
+                    lineTo(cX - coreRadiusPx * 1.4f, cY - coreRadiusPx * 0.8f)
+                    lineTo(cX - coreRadiusPx * 0.7f, cY - coreRadiusPx * 1.7f)
+                    lineTo(cX, cY - coreRadiusPx * 0.6f)
+                    lineTo(cX + coreRadiusPx * 0.7f, cY - coreRadiusPx * 1.7f)
+                    lineTo(cX + coreRadiusPx * 1.4f, cY - coreRadiusPx * 0.8f)
+                    close()
+                }
+                drawPath(path = heartPath, color = dot.glowColor)
+            }
+            com.example.model.DotStyle.GOLDEN_SHIELD -> {
+                drawCircle(color = dot.glowColor.copy(alpha = 0.32f), radius = glowRadiusPx, center = centerOffset)
+                val shieldPath = Path().apply {
+                    moveTo(cX, cY - coreRadiusPx * 1.8f)
+                    lineTo(cX + coreRadiusPx * 1.4f, cY - coreRadiusPx * 0.9f)
+                    lineTo(cX + coreRadiusPx * 1.1f, cY + coreRadiusPx * 1.3f)
+                    lineTo(cX, cY + coreRadiusPx * 2.1f)
+                    lineTo(cX - coreRadiusPx * 1.1f, cY + coreRadiusPx * 1.3f)
+                    lineTo(cX - coreRadiusPx * 1.4f, cY - coreRadiusPx * 0.9f)
+                    close()
+                }
+                drawPath(path = shieldPath, color = dot.glowColor)
+                drawPath(path = shieldPath, color = Color.White, style = Stroke(width = with(density) { 1.2.dp.toPx() }))
+            }
+            com.example.model.DotStyle.NEON_CROSSHAIR -> {
+                drawCircle(color = dot.glowColor, radius = coreRadiusPx * 1.8f, center = centerOffset, style = Stroke(width = with(density) { 1.2.dp.toPx() }))
+                val arm = coreRadiusPx * 2.3f
+                drawLine(color = dot.glowColor, start = Offset(cX - arm, cY), end = Offset(cX - coreRadiusPx * 1.0f, cY), strokeWidth = with(density) { 1.5.dp.toPx() })
+                drawLine(color = dot.glowColor, start = Offset(cX + coreRadiusPx * 1.0f, cY), end = Offset(cX + arm, cY), strokeWidth = with(density) { 1.5.dp.toPx() })
+                drawLine(color = dot.glowColor, start = Offset(cX, cY - arm), end = Offset(cX, cY - coreRadiusPx * 1.0f), strokeWidth = with(density) { 1.5.dp.toPx() })
+                drawLine(color = dot.glowColor, start = Offset(cX, cY + coreRadiusPx * 1.0f), end = Offset(cX, cY + arm), strokeWidth = with(density) { 1.5.dp.toPx() })
+                drawCircle(color = dot.centerColor, radius = coreRadiusPx * 0.5f, center = centerOffset)
+            }
+            com.example.model.DotStyle.FIREFLY_SWARM -> {
+                drawCircle(color = dot.glowColor.copy(alpha = 0.22f), radius = glowRadiusPx, center = centerOffset)
+                val swarm = listOf(
+                    Offset(cX - coreRadiusPx * 1.0f, cY - coreRadiusPx * 1.0f),
+                    Offset(cX + coreRadiusPx * 1.2f, cY + coreRadiusPx * 0.4f),
+                    Offset(cX - coreRadiusPx * 0.4f, cY + coreRadiusPx * 1.1f)
+                )
+                for (pt in swarm) {
+                    drawCircle(color = dot.centerColor, radius = with(density) { 2.5.dp.toPx() }, center = pt)
+                }
+                drawCircle(color = dot.glowColor, radius = coreRadiusPx * 0.8f, center = centerOffset)
+            }
+            com.example.model.DotStyle.GALAXY_ORBIT -> {
+                drawCircle(color = dot.glowColor.copy(alpha = 0.28f), radius = glowRadiusPx * 1.1f, center = centerOffset)
+                drawCircle(color = dot.glowColor, radius = coreRadiusPx * 2.0f, center = centerOffset, style = Stroke(width = with(density) { 0.8.dp.toPx() }))
+                drawCircle(color = dot.centerColor, radius = coreRadiusPx, center = centerOffset)
+            }
+            com.example.model.DotStyle.PLASMA_BALL -> {
+                drawCircle(color = dot.glowColor.copy(alpha = 0.32f), radius = glowRadiusPx, center = centerOffset)
+                for (i in 0 until 4) {
+                    val ang = Math.toRadians((i * 90).toDouble())
+                    val endX = (cX + glowRadiusPx * 0.75f * Math.cos(ang)).toFloat()
+                    val endY = (cY + glowRadiusPx * 0.75f * Math.sin(ang)).toFloat()
+                    drawLine(color = dot.glowColor, start = centerOffset, end = Offset(endX, endY), strokeWidth = with(density) { 1.2.dp.toPx() })
+                }
+                drawCircle(color = Color.White, radius = coreRadiusPx, center = centerOffset)
+            }
+            com.example.model.DotStyle.EGYPTIAN_EYE -> {
+                drawCircle(color = dot.glowColor.copy(alpha = 0.28f), radius = glowRadiusPx, center = centerOffset)
+                val eyeW = coreRadiusPx * 1.8f
+                val eyeH = coreRadiusPx * 0.9f
+                val eyePath = Path().apply {
+                    moveTo(cX - eyeW, cY)
+                    quadraticTo(cX, cY - eyeH, cX + eyeW, cY)
+                    quadraticTo(cX, cY + eyeH, cX - eyeW, cY)
+                    close()
+                }
+                drawPath(path = eyePath, color = dot.glowColor, style = Stroke(width = with(density) { 1.5.dp.toPx() }))
+                drawCircle(color = dot.centerColor, radius = coreRadiusPx * 0.6f, center = centerOffset)
+            }
+            com.example.model.DotStyle.YIN_YANG -> {
+                val rad = coreRadiusPx * 1.8f
+                drawCircle(color = Color.Black, radius = rad, center = centerOffset)
+                drawCircle(color = Color.White, radius = rad, center = centerOffset, style = Stroke(width = with(density) { 1.5.dp.toPx() }))
+                drawCircle(color = Color.White, radius = rad * 0.5f, center = Offset(cX, cY - rad * 0.5f))
+                drawCircle(color = Color.Black, radius = rad * 0.5f, center = Offset(cX, cY + rad * 0.5f))
+                drawCircle(color = Color.Black, radius = rad * 0.15f, center = Offset(cX, cY - rad * 0.5f))
+                drawCircle(color = Color.White, radius = rad * 0.15f, center = Offset(cX, cY + rad * 0.5f))
+            }
+            com.example.model.DotStyle.DISCO_BALL -> {
+                drawCircle(
+                    brush = Brush.sweepGradient(
+                        colors = listOf(Color(0xFFE040FB), Color(0xFF00E5FF), Color(0xFFFFEA00), Color(0xFFE040FB)),
+                        center = centerOffset
+                    ),
+                    radius = coreRadiusPx * 2.2f,
+                    center = centerOffset
+                )
+                drawCircle(color = Color.White.copy(alpha = 0.5f), radius = coreRadiusPx * 2.2f, center = centerOffset, style = Stroke(width = with(density) { 0.8.dp.toPx() }))
             }
         }
     }

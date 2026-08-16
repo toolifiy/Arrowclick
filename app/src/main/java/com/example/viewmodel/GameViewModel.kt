@@ -49,6 +49,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     val equippedSkinId: StateFlow<String> = repository.equippedSkinId
     val soundEnabled: StateFlow<Boolean> = repository.soundEnabled
     val hapticEnabled: StateFlow<Boolean> = repository.hapticEnabled
+    val showArrow: StateFlow<Boolean> = repository.showArrow
+    val showDot: StateFlow<Boolean> = repository.showDot
+    val alignCenter: StateFlow<Boolean> = repository.alignCenter
     val hearts: StateFlow<Int> = repository.hearts
 
     val equippedSkin: StateFlow<ArrowSkin> = repository.equippedSkinId
@@ -89,6 +92,18 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setHapticEnabled(enabled: Boolean) {
         repository.setHapticEnabled(enabled)
+    }
+
+    fun setShowArrow(enabled: Boolean) {
+        repository.setShowArrow(enabled)
+    }
+
+    fun setShowDot(enabled: Boolean) {
+        repository.setShowDot(enabled)
+    }
+
+    fun setAlignCenter(enabled: Boolean) {
+        repository.setAlignCenter(enabled)
     }
 
     fun resetStats() {
@@ -161,6 +176,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
             if (remainingHearts <= 0) {
                 // Out of hearts completely (meaning mistake #5 occurred, hearts dropped to 0)
+                soundManager.playGameOverSound() // Play the 0.5s "dhidhid dhudhum tadak" crash sound!
                 _uiState.value = _uiState.value.copy(
                     isArrowVisible = false,
                     showReactionOverlay = false,
@@ -168,7 +184,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     showOutPopup = true
                 )
             } else {
-                // Heart deducted, respawn next arrow in 500ms
+                // Heart deducted, play the loud distinct wrong click warning buzzer!
+                soundManager.playWrongClick()
                 _uiState.value = _uiState.value.copy(
                     isArrowVisible = false,
                     showReactionOverlay = false,
@@ -182,7 +199,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         } else {
-            // Out of hearts completely! Show the animated broken heart popup
+            // Out of hearts completely! Show the animated broken heart popup and play Game Over sound
+            soundManager.playGameOverSound()
             _uiState.value = _uiState.value.copy(
                 isArrowVisible = false,
                 showReactionOverlay = false,

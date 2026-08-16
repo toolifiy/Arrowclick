@@ -10,13 +10,25 @@ enum class ArrowTailStyle {
     EMERALD_CRYSTAL,
     COSMIC_STAR,
     STEALTH_OBSIDIAN,
-    // NEW UNIQUE SKIN TYPES:
     SNAKE_REALISTIC,       // Realistic slithering viper with scales, snake eye, and red tongue tip
     RED_TIP_BEAM,          // Long sleek laser line with bright luminous red tip (no arrow wings)
     DRAGON_KATANA,         // Japanese steel blade katana with dragon fire tip
     LIGHTNING_BOLT,        // Sharp jagged electric storm zigzag with plasma orb tip
     RAINBOW_HYPER,         // Prismatic chromatic spectrum beam with rainbow pulse tip
-    MECHA_RAILGUN          // Futuristic cyberpunk sci-fi railgun energy rod
+    MECHA_RAILGUN,         // Futuristic cyberpunk sci-fi railgun energy rod
+    // NEW CODES TO FILL 25 SKINS:
+    ICE_SPIKE,
+    ROYAL_SCEPTRE,
+    SHADOW_ASSASSIN,
+    TOXIC_PLAGUE,
+    VALKYRIE_SPEAR,
+    MAGMA_BURST,
+    CHRONO_GEAR,
+    BUBBLE_AQUA,
+    CANDY_CANE,
+    PIXEL_RETRO,
+    PIRATE_CUTLASS,
+    ANGELIC_WING
 }
 
 data class ArrowSkin(
@@ -216,6 +228,175 @@ object ArrowSkinCatalog {
         glowRadiusDp = 24f
     )
 
+    // NEW PRESET SKINS TO COMPLY TO EXACTLY 25 UNIQUE PIECES:
+    val GLACIAL_ICE = ArrowSkin(
+        id = "skin_glacial_ice",
+        name = "Glacial Ice Spike",
+        description = "Forged in zero-kelvin crystal frost, glowing light-blue spike.",
+        price = 800,
+        strokeColor = Color(0xFF80DEEA),
+        tipGlowColor = Color(0xFF00E5FF),
+        tipCenterColor = Color(0xFFE0F7FA),
+        tailStyle = ArrowTailStyle.ICE_SPIKE,
+        strokeWidthDp = 16f,
+        headWingLengthDp = 72f,
+        glowRadiusDp = 22f
+    )
+
+    val IMPERIAL_SCEPTRE = ArrowSkin(
+        id = "skin_imperial_sceptre",
+        name = "Imperial Sceptre",
+        description = "Elegant deep crimson royal staff with gold filigree and diamond tips.",
+        price = 900,
+        strokeColor = Color(0xFFB71C1C),
+        tipGlowColor = Color(0xFFFFD54F),
+        tipCenterColor = Color(0xFFFFFFFF),
+        tailStyle = ArrowTailStyle.ROYAL_SCEPTRE,
+        strokeWidthDp = 20f,
+        headWingLengthDp = 68f,
+        glowRadiusDp = 20f
+    )
+
+    val SHADOW_ASSASSIN = ArrowSkin(
+        id = "skin_shadow_assassin",
+        name = "Shadow Assassin",
+        description = "Shrouded in black mist and dark purple energy, silent and deadly.",
+        price = 1000,
+        strokeColor = Color(0xFF121212),
+        tipGlowColor = Color(0xFF9C27B0),
+        tipCenterColor = Color(0xFFE040FB),
+        tailStyle = ArrowTailStyle.SHADOW_ASSASSIN,
+        strokeWidthDp = 16f,
+        headWingLengthDp = 74f,
+        glowRadiusDp = 24f
+    )
+
+    val TOXIC_PLAGUE = ArrowSkin(
+        id = "skin_toxic_plague",
+        name = "Toxic Plague",
+        description = "Corrosive neon toxic sludge dripping hazard waste, highly acidic.",
+        price = 1100,
+        strokeColor = Color(0xFF9E9D24),
+        tipGlowColor = Color(0xFFCCFF00),
+        tipCenterColor = Color(0xFFF1F8E9),
+        tailStyle = ArrowTailStyle.TOXIC_PLAGUE,
+        strokeWidthDp = 18f,
+        headWingLengthDp = 70f,
+        glowRadiusDp = 26f
+    )
+
+    val VALKYRIE_SPEAR = ArrowSkin(
+        id = "skin_valkyrie_spear",
+        name = "Valkyrie Spear",
+        description = "Blessed Nordic silver wings with celestial cyan holy light.",
+        price = 1200,
+        strokeColor = Color(0xFFB0BEC5),
+        tipGlowColor = Color(0xFF80DEEA),
+        tipCenterColor = Color(0xFFFFFFFF),
+        tailStyle = ArrowTailStyle.VALKYRIE_SPEAR,
+        strokeWidthDp = 17f,
+        headWingLengthDp = 80f,
+        glowRadiusDp = 22f
+    )
+
+    val MAGMA_BURST = ArrowSkin(
+        id = "skin_magma_burst",
+        name = "Magma Burst",
+        description = "Molten crackling volcanic lava flow, radiating intense superheated orange-red.",
+        price = 1300,
+        strokeColor = Color(0xFFD84315),
+        tipGlowColor = Color(0xFFFF3D00),
+        tipCenterColor = Color(0xFFFFEB3B),
+        tailStyle = ArrowTailStyle.MAGMA_BURST,
+        strokeWidthDp = 20f,
+        headWingLengthDp = 75f,
+        glowRadiusDp = 28f
+    )
+
+    val CHRONO_GEAR = ArrowSkin(
+        id = "skin_chrono_gear",
+        name = "Chrono Gear",
+        description = "Steampunk bronze shaft with rotating brass gear teeth and golden glow.",
+        price = 1400,
+        strokeColor = Color(0xFF8D6E63),
+        tipGlowColor = Color(0xFFFFB300),
+        tipCenterColor = Color(0xFFFFF8E1),
+        tailStyle = ArrowTailStyle.CHRONO_GEAR,
+        strokeWidthDp = 18f,
+        headWingLengthDp = 72f,
+        glowRadiusDp = 20f
+    )
+
+    val BUBBLE_AQUA = ArrowSkin(
+        id = "skin_bubble_aqua",
+        name = "Oceanic Bubble Wave",
+        description = "Fluid sea-teal stream bubbling toward a shiny glowing pearl tip.",
+        price = 1500,
+        strokeColor = Color(0xFF00ACC1),
+        tipGlowColor = Color(0xFF26A69A),
+        tipCenterColor = Color(0xFFE0F2F1),
+        tailStyle = ArrowTailStyle.BUBBLE_AQUA,
+        strokeWidthDp = 18f,
+        headWingLengthDp = 76f,
+        glowRadiusDp = 24f
+    )
+
+    val CANDY_CANE = ArrowSkin(
+        id = "skin_candy_cane",
+        name = "Sweet Candy Cane",
+        description = "Peppermint red and white striped swirl stick with a sugary sweet neon glow.",
+        price = 1600,
+        strokeColor = Color(0xFFE53935),
+        tipGlowColor = Color(0xFFFF8A80),
+        tipCenterColor = Color(0xFFFFFFFF),
+        tailStyle = ArrowTailStyle.CANDY_CANE,
+        strokeWidthDp = 18f,
+        headWingLengthDp = 65f,
+        glowRadiusDp = 20f
+    )
+
+    val PIXEL_RETRO = ArrowSkin(
+        id = "skin_pixel_retro",
+        name = "Retro 8-Bit Laser",
+        description = "Chunky pixelated retro-arcade solid orange laser beam with blocky corners.",
+        price = 1700,
+        strokeColor = Color(0xFFEF6C00),
+        tipGlowColor = Color(0xFFFFB300),
+        tipCenterColor = Color(0xFFFFFFFF),
+        tailStyle = ArrowTailStyle.PIXEL_RETRO,
+        strokeWidthDp = 22f,
+        headWingLengthDp = 55f,
+        glowRadiusDp = 18f
+    )
+
+    val PIRATE_CUTLASS = ArrowSkin(
+        id = "skin_pirate_cutlass",
+        name = "Dread Pirate Cutlass",
+        description = "Curved Damascus steel pirate blade with golden skull hilt and neon red slash trail.",
+        price = 1800,
+        strokeColor = Color(0xFF78909C),
+        tipGlowColor = Color(0xFFFF1744),
+        tipCenterColor = Color(0xFFFFD54F),
+        tailStyle = ArrowTailStyle.PIRATE_CUTLASS,
+        strokeWidthDp = 17f,
+        headWingLengthDp = 60f,
+        glowRadiusDp = 24f
+    )
+
+    val ANGELIC_WING = ArrowSkin(
+        id = "skin_angelic_wing",
+        name = "Angelic Wings",
+        description = "Pure divine feather-white shaft wrapped in holy golden halo rings.",
+        price = 2000,
+        strokeColor = Color(0xFFECEFF1),
+        tipGlowColor = Color(0xFFFFD54F),
+        tipCenterColor = Color(0xFFFFFDE7),
+        tailStyle = ArrowTailStyle.ANGELIC_WING,
+        strokeWidthDp = 16f,
+        headWingLengthDp = 84f,
+        glowRadiusDp = 26f
+    )
+
     val allSkins: List<ArrowSkin> = listOf(
         CLASSIC,
         RED_TIP_LINE,
@@ -229,7 +410,19 @@ object ArrowSkinCatalog {
         MECHA_CANNON,
         EMERALD_VIPER,
         COSMIC_VIOLET,
-        OBSIDIAN_STEALTH
+        OBSIDIAN_STEALTH,
+        GLACIAL_ICE,
+        IMPERIAL_SCEPTRE,
+        SHADOW_ASSASSIN,
+        TOXIC_PLAGUE,
+        VALKYRIE_SPEAR,
+        MAGMA_BURST,
+        CHRONO_GEAR,
+        BUBBLE_AQUA,
+        CANDY_CANE,
+        PIXEL_RETRO,
+        PIRATE_CUTLASS,
+        ANGELIC_WING
     )
 
     fun getSkinById(id: String): ArrowSkin {

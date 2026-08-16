@@ -85,6 +85,9 @@ fun GameScreen(
     lastHitOffset: Offset?,
     soundEnabled: Boolean,
     hapticEnabled: Boolean,
+    showArrow: Boolean,
+    showDot: Boolean,
+    alignCenter: Boolean,
     showOutPopup: Boolean,
     showMockAd: Boolean,
     onArrowSpawned: () -> Unit,
@@ -141,36 +144,95 @@ fun GameScreen(
     ) {
         val isCompactScreen = maxHeight < 640.dp
 
-        // 1. TOP HEADER BAR: Perfectly centered horizontally using Box alignment
-        Box(
+        // 1. TOP HEADER BAR: Perfectly adaptive Column layout to prevent overlap on any device size!
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = if (isCompactScreen) 8.dp else 14.dp)
+                .padding(horizontal = 12.dp, vertical = if (isCompactScreen) 6.dp else 12.dp)
                 .zIndex(10f)
         ) {
-            // Left: Back button
-            IconButton(
-                onClick = {
-                    if (hapticEnabled) view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
-                    showExitConfirmation = true
-                },
-                modifier = Modifier
-                    .size(44.dp)
-                    .align(Alignment.CenterStart)
-                    .testTag("back_to_home_button")
+            // Tier 1 Row: Back Button and Status Badges
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back to Home",
-                    tint = Color(0xFF111111),
-                    modifier = Modifier.size(28.dp)
-                )
+                // Left: Back button
+                IconButton(
+                    onClick = {
+                        if (hapticEnabled) view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                        showExitConfirmation = true
+                    },
+                    modifier = Modifier
+                        .size(44.dp)
+                        .testTag("back_to_home_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back to Home",
+                        tint = Color(0xFF111111),
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                // Right: Hearts and Coins Badges Side-By-Side (halka dark curved boxes)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    // Hearts Badge (halka dark curved box)
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color(0xFF222226), // halka dark curved box
+                        shadowElevation = 0.dp
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "❤️",
+                                fontSize = 13.sp
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = "$hearts/5",
+                                fontSize = if (isCompactScreen) 12.sp else 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFFF4081) // Beautiful bright pink for high contrast on dark
+                            )
+                        }
+                    }
+
+                    // Coins Badge (halka dark curved box)
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color(0xFF222226), // halka dark curved box
+                        shadowElevation = 0.dp
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            VibrantGoldenCoin(size = 16.dp)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = com.example.util.FormatUtils.formatCoins(coins),
+                                fontSize = if (isCompactScreen) 13.sp else 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White // White text for contrast on dark
+                            )
+                        }
+                    }
+                }
             }
 
-            // Middle: EXACTLY CENTERED LIVE TIMER (Not shifted left or right)
+            Spacer(modifier = Modifier.height(if (isCompactScreen) 4.dp else 10.dp))
+
+            // Tier 2 Column: Centered Timer (Has full width, zero chance of overlap)
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.align(Alignment.Center)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
                     text = "REACTION TIME",
@@ -197,58 +259,6 @@ fun GameScreen(
                     color = Color(0xFF00C853)
                 )
             }
-
-            // Right: Hearts and Coins Badges Side-By-Side (halka dark curved boxes)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.align(Alignment.CenterEnd)
-            ) {
-                // Hearts Badge (halka dark curved box)
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color(0xFF222226), // halka dark curved box
-                    shadowElevation = 0.dp
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "❤️",
-                            fontSize = 13.sp
-                        )
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text(
-                            text = "$hearts/5",
-                            fontSize = if (isCompactScreen) 12.sp else 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFFF4081) // Beautiful bright pink for high contrast on dark
-                        )
-                    }
-                }
-
-                // Coins Badge (halka dark curved box)
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color(0xFF222226), // halka dark curved box
-                    shadowElevation = 0.dp
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        VibrantGoldenCoin(size = 16.dp)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = com.example.util.FormatUtils.formatCoins(coins),
-                            fontSize = if (isCompactScreen) 13.sp else 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White // White text for contrast on dark
-                        )
-                    }
-                }
-            }
         }
 
         // 2. Playable Interactive Arrow Canvas
@@ -257,6 +267,9 @@ fun GameScreen(
                 skin = skin,
                 dotSkin = dotSkin,
                 isArrowVisible = true,
+                showArrow = showArrow,
+                showDot = showDot,
+                alignCenter = alignCenter,
                 onArrowSpawned = { _ ->
                     liveElapsedMs = 0L
                 },
@@ -564,7 +577,7 @@ fun GameScreen(
                         border = BorderStroke(1.5.dp, Color(0xFF3F51B5)),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(340.dp)
+                            .height(if (isCompactScreen) 210.dp else 340.dp)
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
                             // Tech style vector background
@@ -581,24 +594,24 @@ fun GameScreen(
                             Column(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(24.dp),
+                                    .padding(if (isCompactScreen) 12.dp else 24.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
                                         text = "⚔️ RAID ⚔️",
-                                        fontSize = 28.sp,
+                                        fontSize = if (isCompactScreen) 20.sp else 28.sp,
                                         fontWeight = FontWeight.Black,
                                         color = Color(0xFFFFD54F),
-                                        letterSpacing = 4.sp
+                                        letterSpacing = if (isCompactScreen) 2.sp else 4.sp
                                     )
                                     Text(
                                         text = "REFLEX LEGENDS",
-                                        fontSize = 14.sp,
+                                        fontSize = if (isCompactScreen) 11.sp else 14.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White,
-                                        letterSpacing = 2.sp
+                                        letterSpacing = 1.5.sp
                                     )
                                 }
 
@@ -611,7 +624,7 @@ fun GameScreen(
                                         imageVector = Icons.Default.PlayArrow,
                                         contentDescription = null,
                                         tint = Color(0xFF00E676),
-                                        modifier = Modifier.size(60.dp)
+                                        modifier = Modifier.size(if (isCompactScreen) 40.dp else 60.dp)
                                     )
                                     Column {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -620,26 +633,28 @@ fun GameScreen(
                                                     imageVector = Icons.Default.Star,
                                                     contentDescription = null,
                                                     tint = Color(0xFFFFD54F),
-                                                    modifier = Modifier.size(16.dp)
+                                                    modifier = Modifier.size(if (isCompactScreen) 12.dp else 16.dp)
                                                 )
                                             }
                                         }
                                         Text(
                                             text = "10M+ Downloads",
                                             color = Color.Gray,
-                                            fontSize = 11.sp,
+                                            fontSize = if (isCompactScreen) 10.sp else 11.sp,
                                             fontWeight = FontWeight.Bold
                                         )
                                     }
                                 }
 
-                                Text(
-                                    text = "Duniya ka sabse premium, highly addictive reflex challenge game! Abhi download karein aur speed records todein.",
-                                    color = Color.LightGray,
-                                    fontSize = 12.sp,
-                                    textAlign = TextAlign.Center,
-                                    lineHeight = 16.sp
-                                )
+                                if (!isCompactScreen) {
+                                    Text(
+                                        text = "Duniya ka sabse premium, highly addictive reflex challenge game! Abhi download karein aur speed records todein.",
+                                        color = Color.LightGray,
+                                        fontSize = 12.sp,
+                                        textAlign = TextAlign.Center,
+                                        lineHeight = 16.sp
+                                    )
+                                }
                             }
                         }
                     }

@@ -43,6 +43,15 @@ class GameRepository(context: Context) {
     private val _hapticEnabled = MutableStateFlow(prefs.getBoolean(KEY_HAPTIC_ENABLED, true))
     val hapticEnabled: StateFlow<Boolean> = _hapticEnabled.asStateFlow()
 
+    private val _showArrow = MutableStateFlow(prefs.getBoolean(KEY_SHOW_ARROW, true))
+    val showArrow: StateFlow<Boolean> = _showArrow.asStateFlow()
+
+    private val _showDot = MutableStateFlow(prefs.getBoolean(KEY_SHOW_DOT, true))
+    val showDot: StateFlow<Boolean> = _showDot.asStateFlow()
+
+    private val _alignCenter = MutableStateFlow(prefs.getBoolean(KEY_ALIGN_CENTER, true))
+    val alignCenter: StateFlow<Boolean> = _alignCenter.asStateFlow()
+
     // Hearts state flow (Max 5, restored daily to 5)
     private val _hearts = MutableStateFlow(5)
     val hearts: StateFlow<Int> = _hearts.asStateFlow()
@@ -99,6 +108,33 @@ class GameRepository(context: Context) {
     fun setHapticEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_HAPTIC_ENABLED, enabled).apply()
         _hapticEnabled.value = enabled
+    }
+
+    fun setShowArrow(enabled: Boolean) {
+        var finalEnabled = enabled
+        if (!finalEnabled && !_showDot.value) {
+            // Cannot disable both: force at least one to be enabled. Here, if turning off Arrow and Dot is already off, we auto-enable Dot!
+            prefs.edit().putBoolean(KEY_SHOW_DOT, true).apply()
+            _showDot.value = true
+        }
+        prefs.edit().putBoolean(KEY_SHOW_ARROW, finalEnabled).apply()
+        _showArrow.value = finalEnabled
+    }
+
+    fun setShowDot(enabled: Boolean) {
+        var finalEnabled = enabled
+        if (!finalEnabled && !_showArrow.value) {
+            // Cannot disable both: force at least one to be enabled. If turning off Dot and Arrow is off, auto-enable Arrow!
+            prefs.edit().putBoolean(KEY_SHOW_ARROW, true).apply()
+            _showArrow.value = true
+        }
+        prefs.edit().putBoolean(KEY_SHOW_DOT, finalEnabled).apply()
+        _showDot.value = finalEnabled
+    }
+
+    fun setAlignCenter(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_ALIGN_CENTER, enabled).apply()
+        _alignCenter.value = enabled
     }
 
     fun resetGameStats() {
@@ -181,5 +217,8 @@ class GameRepository(context: Context) {
         private const val KEY_HAPTIC_ENABLED = "haptic_feedback_enabled"
         private const val KEY_HEARTS = "user_hearts_count"
         private const val KEY_LAST_HEART_RESET_DATE = "last_heart_reset_date"
+        private const val KEY_SHOW_ARROW = "settings_show_arrow"
+        private const val KEY_SHOW_DOT = "settings_show_dot"
+        private const val KEY_ALIGN_CENTER = "settings_align_center"
     }
 }
