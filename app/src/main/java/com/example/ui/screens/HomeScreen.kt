@@ -168,14 +168,14 @@ fun HomeScreen(
                         }
                     }
 
-                    // Settings Button in Top-Right Corner
+                    // Settings Button in Top-Right Corner (Enlarged by 50%)
                     IconButton(
                         onClick = {
                             view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
                             showSettingsDialog = true
                         },
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(50.dp)
                             .background(Color(0xFFF5F5F7), CircleShape)
                             .testTag("settings_button")
                     ) {
@@ -183,7 +183,7 @@ fun HomeScreen(
                             imageVector = Icons.Default.Settings,
                             contentDescription = "Settings",
                             tint = Color(0xFF222222),
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(33.dp)
                         )
                     }
                 }
@@ -402,8 +402,15 @@ fun HomeScreen(
                         onOpenShop()
                     },
                     shape = RoundedCornerShape(18.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFE0E0E0)),
-                    contentPadding = PaddingValues(vertical = 15.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        width = 1.2.dp,
+                        color = Color(0x44000000)
+                    ),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.White,
+                        contentColor = Color(0xFF111111)
+                    ),
+                    contentPadding = PaddingValues(vertical = 16.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("open_shop_button")
@@ -415,16 +422,16 @@ fun HomeScreen(
                         Icon(
                             imageVector = Icons.Default.ShoppingBag,
                             contentDescription = null,
-                            tint = Color(0xFF333333),
-                            modifier = Modifier.size(20.dp)
+                            tint = Color(0xFF111111),
+                            modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "ARROW SKINS SHOP",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp,
-                            color = Color(0xFF333333)
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.5.sp,
+                            color = Color(0xFF111111)
                         )
                     }
                 }

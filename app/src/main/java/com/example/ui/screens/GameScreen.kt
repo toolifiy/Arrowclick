@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import android.view.HapticFeedbackConstants
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,7 +11,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -18,14 +18,20 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -38,9 +44,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.zIndex
 import com.example.model.ArrowSkin
 import com.example.ui.components.ArrowGameCanvas
@@ -67,6 +73,7 @@ fun GameScreen(
     val view = LocalView.current
     var liveSpawnTimeMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var liveElapsedMs by remember { mutableLongStateOf(0L) }
+    var showExitConfirmation by remember { mutableStateOf(false) }
 
     // Fast real-time live timer loop ticking every ~16ms while the arrow is waiting for tap
     LaunchedEffect(isArrowVisible, liveSpawnTimeMs) {
@@ -76,6 +83,16 @@ fun GameScreen(
                 delay(16L)
             }
         }
+    }
+
+    if (showExitConfirmation) {
+        ExitGameConfirmationDialog(
+            onResume = { showExitConfirmation = false },
+            onExit = {
+                showExitConfirmation = false
+                onBackToHome()
+            }
+        )
     }
 
     Box(
@@ -96,7 +113,7 @@ fun GameScreen(
             IconButton(
                 onClick = {
                     if (hapticEnabled) view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
-                    onBackToHome()
+                    showExitConfirmation = true
                 },
                 modifier = Modifier
                     .size(44.dp)
@@ -231,37 +248,9 @@ fun GameScreen(
                     )
                 }
             }
-
-            // 4. Floating +1 Coin badge at the exact tap tip
-            if (lastHitOffset != null) {
-                Box(
-                    modifier = Modifier
-                        .offset {
-                            IntOffset(
-                                x = (lastHitOffset.x - 30).toInt(),
-                                y = (lastHitOffset.y - 45).toInt()
-                            )
-                        }
-                        .zIndex(6f)
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = Color(0xFF00C853),
-                        shadowElevation = 3.dp
-                    ) {
-                        Text(
-                            text = "+1",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.White,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                        )
-                    }
-                }
-            }
         }
 
-        // 5. Bottom Instruction: "TAP THE ARROW TIP!"
+        // 4. Bottom Instruction: "TAP THE ARROW TIP!"
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -279,6 +268,99 @@ fun GameScreen(
                 textDecoration = TextDecoration.Underline,
                 textAlign = TextAlign.Center
             )
+        }
+    }
+}
+
+@Composable
+fun ExitGameConfirmationDialog(
+    onResume: () -> Unit,
+    onExit: () -> Unit
+) {
+    Dialog(onDismissRequest = onResume) {
+        Card(
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            border = BorderStroke(1.2.dp, Color(0x33000000)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .padding(8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "EXIT GAME?",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.5.sp,
+                    color = Color(0xFF111111)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Do you want to return to the home screen?",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF666666),
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(22.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Resume Button: White Background + Black Border + Black Text
+                    OutlinedButton(
+                        onClick = onResume,
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(1.2.dp, Color(0xFF111111)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color.White,
+                            contentColor = Color(0xFF111111)
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp)
+                    ) {
+                        Text(
+                            text = "RESUME",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.sp,
+                            color = Color(0xFF111111)
+                        )
+                    }
+
+                    // Exit Button: Black Background + White Text
+                    Button(
+                        onClick = onExit,
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF111111),
+                            contentColor = Color.White
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp)
+                    ) {
+                        Text(
+                            text = "EXIT",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.sp,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
         }
     }
 }
