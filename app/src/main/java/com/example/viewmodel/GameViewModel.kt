@@ -48,7 +48,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     val soundEnabled: StateFlow<Boolean> = repository.soundEnabled
     val hapticEnabled: StateFlow<Boolean> = repository.hapticEnabled
     val hearts: StateFlow<Int> = repository.hearts
-    val heartsDepletedTime: StateFlow<Long> = repository.heartsDepletedTime
 
     val equippedSkin: StateFlow<ArrowSkin> = repository.equippedSkinId
         .combine(repository.unlockedSkinIds) { id, _ ->
@@ -90,12 +89,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun navigateTo(screen: AppScreen) {
         respawnJob?.cancel()
         if (screen == AppScreen.GAME) {
+            val hasHearts = repository.hearts.value > 0
             _uiState.value = _uiState.value.copy(
                 screen = screen,
-                isArrowVisible = true,
+                isArrowVisible = hasHearts,
                 showReactionOverlay = false,
                 showCoinPopup = false,
-                showOutPopup = false,
+                showOutPopup = !hasHearts,
                 showMockAd = false
             )
         } else {
@@ -147,18 +147,29 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (currentHearts > 0) {
             // Deduct 1 Heart
             repository.useHeart()
+            val remainingHearts = repository.hearts.value
 
-            // Heart deducted, respawn next arrow in 500ms
-            _uiState.value = _uiState.value.copy(
-                isArrowVisible = false,
-                showReactionOverlay = false,
-                showCoinPopup = false
-            )
-            respawnJob = viewModelScope.launch {
-                delay(500L)
+            if (remainingHearts <= 0) {
+                // Out of hearts completely (meaning mistake #5 occurred, hearts dropped to 0)
                 _uiState.value = _uiState.value.copy(
-                    isArrowVisible = true
+                    isArrowVisible = false,
+                    showReactionOverlay = false,
+                    showCoinPopup = false,
+                    showOutPopup = true
                 )
+            } else {
+                // Heart deducted, respawn next arrow in 500ms
+                _uiState.value = _uiState.value.copy(
+                    isArrowVisible = false,
+                    showReactionOverlay = false,
+                    showCoinPopup = false
+                )
+                respawnJob = viewModelScope.launch {
+                    delay(500L)
+                    _uiState.value = _uiState.value.copy(
+                        isArrowVisible = true
+                    )
+                }
             }
         } else {
             // Out of hearts completely! Show the animated broken heart popup

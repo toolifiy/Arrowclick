@@ -91,49 +91,23 @@ fun GameScreen(
     onTipClicked: (reactionTimeMs: Long, tipOffset: Offset) -> Unit,
     onMissClicked: (touchOffset: Offset) -> Unit,
     onBackToHome: () -> Unit,
-    heartsDepletedTime: Long = 0L,
     modifier: Modifier = Modifier
 ) {
     val view = LocalView.current
-    var liveSpawnTimeMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var liveElapsedMs by remember { mutableLongStateOf(0L) }
     var showExitConfirmation by remember { mutableStateOf(false) }
 
-    // Dynamic 24-hour timer calculation
-    var remainingSeconds by remember(heartsDepletedTime, hearts) {
-        mutableStateOf(0L)
-    }
-    LaunchedEffect(heartsDepletedTime, hearts) {
-        if (hearts == 0 && heartsDepletedTime > 0L) {
-            while (true) {
-                val elapsed = System.currentTimeMillis() - heartsDepletedTime
-                val left = (24L * 60 * 60 * 1000L - elapsed).coerceAtLeast(0L)
-                remainingSeconds = left / 1000L
-                delay(1000L)
-            }
-        } else {
-            remainingSeconds = 0L
-        }
-    }
-
-    val timerString = if (hearts == 0 && remainingSeconds > 0L) {
-        val hours = remainingSeconds / 3600
-        val minutes = (remainingSeconds % 3600) / 60
-        val secs = remainingSeconds % 60
-        String.format(Locale.US, "%02d:%02d:%02d", hours, minutes, secs)
-    } else {
-        ""
-    }
-
     // Fast real-time live timer loop ticking every ~16ms while the arrow is waiting for tap
-    LaunchedEffect(isArrowVisible, liveSpawnTimeMs) {
+    LaunchedEffect(isArrowVisible) {
         if (isArrowVisible) {
-            liveSpawnTimeMs = System.currentTimeMillis()
+            val startTime = System.currentTimeMillis()
             onArrowSpawned() // Triggers sound beep on arrow spawn!
             while (isActive) {
-                liveElapsedMs = (System.currentTimeMillis() - liveSpawnTimeMs).coerceAtLeast(0L)
+                liveElapsedMs = (System.currentTimeMillis() - startTime).coerceAtLeast(0L)
                 delay(16L)
             }
+        } else {
+            liveElapsedMs = 0L
         }
     }
 
@@ -239,24 +213,6 @@ fun GameScreen(
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFFF4081) // Beautiful bright pink for high contrast on dark
                         )
-                        
-                        // Timer next to hearts if hearts == 0
-                        if (hearts == 0 && remainingSeconds > 0L) {
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "|",
-                                fontSize = if (isCompactScreen) 12.sp else 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF55555C)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = timerString,
-                                fontSize = if (isCompactScreen) 11.sp else 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFFFFD54F) // Glowing gold color for the timer
-                            )
-                        }
                     }
                 }
 
@@ -288,8 +244,7 @@ fun GameScreen(
             ArrowGameCanvas(
                 skin = skin,
                 isArrowVisible = true,
-                onArrowSpawned = { spawnMs ->
-                    liveSpawnTimeMs = spawnMs
+                onArrowSpawned = { _ ->
                     liveElapsedMs = 0L
                 },
                 onTipClicked = { reactionTimeMs, tipOffset ->
@@ -377,10 +332,10 @@ fun GameScreen(
             }
         }
         // ==========================================
-        // 5. OUT OF HEARTS 3-SECOND COUNTDOWN OVERLAY
+        // 5. OUT OF HEARTS 1.3-SECOND COUNTDOWN OVERLAY
         // ==========================================
         if (showOutPopup) {
-            var countdownValue by remember { mutableFloatStateOf(3.0f) }
+            var countdownValue by remember { mutableFloatStateOf(1.3f) }
             var animatedScale by remember { mutableFloatStateOf(0.8f) }
             var animatedAlpha by remember { mutableFloatStateOf(0f) }
 
@@ -408,9 +363,9 @@ fun GameScreen(
                 while (countdownValue > 0f) {
                     delay(16L)
                     val passed = (System.currentTimeMillis() - startTime) / 1000f
-                    countdownValue = (3.0f - passed).coerceAtLeast(0f)
+                    countdownValue = (1.3f - passed).coerceAtLeast(0f)
                 }
-                // When 3s completes -> Automatically trigger ad flow
+                // When 1.3s completes -> Automatically trigger ad flow
                 onAdTriggered()
             }
 
@@ -464,7 +419,7 @@ fun GameScreen(
                                     style = Stroke(width = 6.dp.toPx())
                                 )
                                 // Active Sweeping progress line from Left (180 degrees) clockwise
-                                val sweep = 360f * ((3.0f - countdownValue) / 3.0f)
+                                val sweep = 360f * ((1.3f - countdownValue) / 1.3f)
                                 drawArc(
                                     color = Color(0xFFFF1744),
                                     startAngle = 180f,
@@ -732,64 +687,64 @@ fun ExitGameConfirmationDialog(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
             Card(
-                shape = RoundedCornerShape(22.dp),
+                shape = RoundedCornerShape(28.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.2.dp, Color(0x33000000)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                border = BorderStroke(1.5.dp, Color(0x33000000)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
                 modifier = Modifier
-                    .fillMaxWidth(0.85f)
-                    .padding(8.dp)
+                    .fillMaxWidth(0.95f)
+                    .padding(12.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(22.dp),
+                        .padding(32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         text = "EXIT GAME?",
-                        fontSize = 18.sp,
+                        fontSize = 24.sp,
                         fontWeight = FontWeight.Black,
-                        letterSpacing = 1.5.sp,
+                        letterSpacing = 2.0.sp,
                         color = Color(0xFF111111)
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
                         text = "Do you want to return to the home screen?",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF666666),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF555555),
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         // Resume Button
                         OutlinedButton(
                             onClick = onResume,
-                            shape = RoundedCornerShape(14.dp),
-                            border = BorderStroke(1.2.dp, Color(0xFF111111)),
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.5.dp, Color(0xFF111111)),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 containerColor = Color.White,
                                 contentColor = Color(0xFF111111)
                             ),
                             modifier = Modifier
                                 .weight(1f)
-                                .height(46.dp)
+                                .height(58.dp)
                         ) {
                             Text(
                                 text = "RESUME",
-                                fontSize = 13.sp,
+                                fontSize = 16.sp,
                                 fontWeight = FontWeight.Black,
                                 letterSpacing = 1.sp,
                                 color = Color(0xFF111111)
@@ -799,18 +754,18 @@ fun ExitGameConfirmationDialog(
                         // Exit Button
                         Button(
                             onClick = onExit,
-                            shape = RoundedCornerShape(14.dp),
+                            shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color(0xFF111111),
                                 contentColor = Color.White
                             ),
                             modifier = Modifier
                                 .weight(1f)
-                                .height(46.dp)
+                                .height(58.dp)
                         ) {
                             Text(
                                 text = "EXIT",
-                                fontSize = 13.sp,
+                                fontSize = 16.sp,
                                 fontWeight = FontWeight.Black,
                                 letterSpacing = 1.sp,
                                 color = Color.White

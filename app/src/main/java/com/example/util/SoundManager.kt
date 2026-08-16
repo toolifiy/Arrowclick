@@ -59,8 +59,59 @@ class SoundManager(private val context: Context) {
     fun playSuccessTick() {
         if (isMuted) return
         thread(start = true) {
-            synthesizeAndPlay(2000.0, 35)
+            synthesizeAndPlaySuccessClick()
         }
+    }
+
+    private fun synthesizeAndPlaySuccessClick() {
+        val sampleRate = 44100
+        val durationMs = 60
+        val numSamples = (durationMs * sampleRate / 1000)
+        val sample = DoubleArray(numSamples)
+        val generatedSnd = ShortArray(numSamples)
+
+        for (i in 0 until numSamples) {
+            val t = i.toDouble() / sampleRate
+            val progress = i.toDouble() / numSamples
+            
+            // Dual tone sweep: 1100Hz -> 300Hz & 600Hz -> 200Hz
+            val sweepRate1 = -800.0 / (durationMs / 1000.0)
+            val sweepRate2 = -400.0 / (durationMs / 1000.0)
+            
+            val phase1 = 2.0 * Math.PI * (1100.0 * t + 0.5 * sweepRate1 * t * t)
+            val phase2 = 2.0 * Math.PI * (600.0 * t + 0.5 * sweepRate2 * t * t)
+            
+            // Fast attack, exponential decay for juicy organic bubble pluck sound
+            val envelope = if (progress < 0.10) {
+                progress / 0.10
+            } else {
+                Math.exp(-4.5 * (progress - 0.10))
+            }
+            
+            val wave = 0.6 * Math.sin(phase1) + 0.4 * Math.sin(phase2)
+            sample[i] = wave * envelope
+        }
+
+        for (i in 0 until numSamples) {
+            generatedSnd[i] = (sample[i] * 32767).toInt().toShort()
+        }
+
+        try {
+            val audioTrack = AudioTrack(
+                AudioManager.STREAM_MUSIC,
+                sampleRate,
+                AudioFormat.CHANNEL_OUT_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                generatedSnd.size * 2,
+                AudioTrack.MODE_STATIC
+            )
+            audioTrack.write(generatedSnd, 0, generatedSnd.size)
+            audioTrack.play()
+
+            Thread.sleep(durationMs + 40L)
+            audioTrack.stop()
+            audioTrack.release()
+        } catch (_: Exception) {}
     }
 
     fun playErrorTick() {

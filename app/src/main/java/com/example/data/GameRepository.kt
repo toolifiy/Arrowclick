@@ -39,30 +39,11 @@ class GameRepository(context: Context) {
     private val _hearts = MutableStateFlow(5)
     val hearts: StateFlow<Int> = _hearts.asStateFlow()
 
-    private val _heartsDepletedTime = MutableStateFlow(0L)
-    val heartsDepletedTime: StateFlow<Long> = _heartsDepletedTime.asStateFlow()
-
     init {
         checkDailyHeartsReset()
     }
 
     private fun checkDailyHeartsReset() {
-        // Auto restore if 24 hours passed since depletion
-        val depletedTime = prefs.getLong(KEY_HEARTS_DEPLETED_TIME, 0L)
-        if (depletedTime > 0L) {
-            val elapsed = System.currentTimeMillis() - depletedTime
-            val twentyFourHoursMs = 24L * 60 * 60 * 1000L
-            if (elapsed >= twentyFourHoursMs) {
-                prefs.edit()
-                    .putInt(KEY_HEARTS, 5)
-                    .putLong(KEY_HEARTS_DEPLETED_TIME, 0L)
-                    .apply()
-                _hearts.value = 5
-                _heartsDepletedTime.value = 0L
-                return
-            }
-        }
-
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         val lastResetDate = prefs.getString(KEY_LAST_HEART_RESET_DATE, "") ?: ""
         
@@ -71,14 +52,11 @@ class GameRepository(context: Context) {
             prefs.edit()
                 .putInt(KEY_HEARTS, 5)
                 .putString(KEY_LAST_HEART_RESET_DATE, today)
-                .putLong(KEY_HEARTS_DEPLETED_TIME, 0L)
                 .apply()
             _hearts.value = 5
-            _heartsDepletedTime.value = 0L
         } else {
             // Same day: Read remaining saved hearts
             _hearts.value = prefs.getInt(KEY_HEARTS, 5)
-            _heartsDepletedTime.value = prefs.getLong(KEY_HEARTS_DEPLETED_TIME, 0L)
         }
     }
 
@@ -88,11 +66,6 @@ class GameRepository(context: Context) {
             val next = current - 1
             prefs.edit().putInt(KEY_HEARTS, next).apply()
             _hearts.value = next
-            if (next == 0) {
-                val now = System.currentTimeMillis()
-                prefs.edit().putLong(KEY_HEARTS_DEPLETED_TIME, now).apply()
-                _heartsDepletedTime.value = now
-            }
             return true
         }
         return false
@@ -102,24 +75,12 @@ class GameRepository(context: Context) {
         val next = amount.coerceIn(0, 5)
         prefs.edit().putInt(KEY_HEARTS, next).apply()
         _hearts.value = next
-        if (next == 0) {
-            val now = System.currentTimeMillis()
-            prefs.edit().putLong(KEY_HEARTS_DEPLETED_TIME, now).apply()
-            _heartsDepletedTime.value = now
-        } else {
-            prefs.edit().putLong(KEY_HEARTS_DEPLETED_TIME, 0L).apply()
-            _heartsDepletedTime.value = 0L
-        }
     }
 
     fun addHeart(amount: Int = 1) {
         val next = (_hearts.value + amount).coerceAtMost(5)
         prefs.edit().putInt(KEY_HEARTS, next).apply()
         _hearts.value = next
-        if (next > 0) {
-            prefs.edit().putLong(KEY_HEARTS_DEPLETED_TIME, 0L).apply()
-            _heartsDepletedTime.value = 0L
-        }
     }
 
     fun setSoundEnabled(enabled: Boolean) {
@@ -194,6 +155,5 @@ class GameRepository(context: Context) {
         private const val KEY_HAPTIC_ENABLED = "haptic_feedback_enabled"
         private const val KEY_HEARTS = "user_hearts_count"
         private const val KEY_LAST_HEART_RESET_DATE = "last_heart_reset_date"
-        private const val KEY_HEARTS_DEPLETED_TIME = "hearts_depleted_timestamp"
     }
 }

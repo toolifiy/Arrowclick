@@ -75,37 +75,10 @@ fun HomeScreen(
     onResetStats: () -> Unit,
     onStartGame: () -> Unit,
     onOpenShop: () -> Unit,
-    heartsDepletedTime: Long = 0L,
     modifier: Modifier = Modifier
 ) {
     val view = LocalView.current
     var showSettingsDialog by remember { mutableStateOf(false) }
-
-    // Dynamic 24-hour timer calculation
-    var remainingSeconds by remember(heartsDepletedTime, hearts) {
-        mutableStateOf(0L)
-    }
-    LaunchedEffect(heartsDepletedTime, hearts) {
-        if (hearts == 0 && heartsDepletedTime > 0L) {
-            while (true) {
-                val elapsed = System.currentTimeMillis() - heartsDepletedTime
-                val left = (24L * 60 * 60 * 1000L - elapsed).coerceAtLeast(0L)
-                remainingSeconds = left / 1000L
-                delay(1000L)
-            }
-        } else {
-            remainingSeconds = 0L
-        }
-    }
-
-    val timerString = if (hearts == 0 && remainingSeconds > 0L) {
-        val hours = remainingSeconds / 3600
-        val minutes = (remainingSeconds % 3600) / 60
-        val secs = remainingSeconds % 60
-        String.format(Locale.US, "%02d:%02d:%02d", hours, minutes, secs)
-    } else {
-        ""
-    }
 
     val infiniteTransition = rememberInfiniteTransition(label = "home_arrow_spin")
     val rotationDeg by infiniteTransition.animateFloat(
@@ -197,24 +170,6 @@ fun HomeScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFFF4081) // Beautiful bright pink for high contrast on dark
                             )
-                            
-                            // Timer next to hearts if hearts == 0
-                            if (hearts == 0 && remainingSeconds > 0L) {
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "|",
-                                    fontSize = if (isCompactScreen) 13.sp else 15.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF55555C)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = timerString,
-                                    fontSize = if (isCompactScreen) 12.sp else 14.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFFFFD54F) // Glowing gold color for the timer
-                                )
-                            }
                         }
                     }
 
