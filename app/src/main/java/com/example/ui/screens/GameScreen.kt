@@ -98,18 +98,28 @@ fun GameScreen(
     val view = LocalView.current
     var liveElapsedMs by remember { mutableLongStateOf(0L) }
     var showExitConfirmation by remember { mutableStateOf(false) }
+    var isTimeout by remember { mutableStateOf(false) }
+    var timerResetTrigger by remember { mutableStateOf(0) }
 
     // Fast real-time live timer loop ticking every ~16ms while the arrow is waiting for tap
-    LaunchedEffect(isArrowVisible) {
+    LaunchedEffect(isArrowVisible, timerResetTrigger) {
         if (isArrowVisible) {
+            isTimeout = false
             val startTime = System.currentTimeMillis()
             onArrowSpawned() // Triggers sound beep on arrow spawn!
             while (isActive) {
-                liveElapsedMs = (System.currentTimeMillis() - startTime).coerceAtLeast(0L)
+                val elapsed = System.currentTimeMillis() - startTime
+                if (elapsed >= 10000L) {
+                    liveElapsedMs = 10000L
+                    isTimeout = true
+                    break
+                }
+                liveElapsedMs = elapsed.coerceAtLeast(0L)
                 delay(16L)
             }
         } else {
             liveElapsedMs = 0L
+            isTimeout = false
         }
     }
 
@@ -135,7 +145,7 @@ fun GameScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = if (isCompactScreen) 8.dp else 14.dp)
+                .padding(horizontal = 8.dp, vertical = if (isCompactScreen) 8.dp else 14.dp)
                 .zIndex(10f)
         ) {
             // Left: Back button
@@ -231,7 +241,7 @@ fun GameScreen(
                         VibrantGoldenCoin(size = 16.dp)
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "$coins",
+                            text = com.example.util.FormatUtils.formatCoins(coins),
                             fontSize = if (isCompactScreen) 13.sp else 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White // White text for contrast on dark
@@ -242,7 +252,7 @@ fun GameScreen(
         }
 
         // 2. Playable Interactive Arrow Canvas
-        if (isArrowVisible) {
+        if (isArrowVisible && !isTimeout) {
             ArrowGameCanvas(
                 skin = skin,
                 dotSkin = dotSkin,
@@ -664,6 +674,118 @@ fun GameScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = Color.Gray
                             )
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. Beautiful Non-Popup Timeout Warning Screen
+        if (isTimeout) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xE6FFF5F5)) // Beautiful warm light red/rose background with transparency
+                    .zIndex(20f)
+                    .clickable(enabled = false) {}, // Swallow clicks to prevent miss clicks behind
+                contentAlignment = Alignment.Center
+            ) {
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    border = BorderStroke(2.dp, Color(0xFFD32F2F)), // Striking Red Border
+                    elevation = CardDefaults.cardElevation(defaultElevation = 16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .widthIn(max = 420.dp)
+                        .padding(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // Big Red Warning Clock Icon
+                        Text(
+                            text = "⏱️",
+                            fontSize = 48.sp,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        Text(
+                            text = "TOUCH UNDER 10 SECONDS!",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.sp,
+                            color = Color(0xFFD32F2F), // Warning Red
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Text(
+                            text = "Instructions / नियम:",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF333333),
+                            modifier = Modifier.align(Alignment.Start)
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        // Styled instructional text
+                        Text(
+                            text = "• Click on the active glowing target dot as fast as possible!\n" +
+                                   "• If you take more than 10 seconds, the target locks up.\n" +
+                                   "• Fast reactions reward you with more coins.\n" +
+                                   "• Click the 'RESTART TIMER' button below to continue.",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF555555),
+                            lineHeight = 18.sp,
+                            textAlign = TextAlign.Start,
+                            modifier = Modifier.align(Alignment.Start)
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Red Restart Button
+                        Button(
+                            onClick = {
+                                if (hapticEnabled) view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                // Reset timeout state and restart timer
+                                timerResetTrigger++
+                                isTimeout = false
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFD32F2F), // Bright warning red
+                                contentColor = Color.White
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp)
+                                .testTag("timeout_restart_button")
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PlayArrow,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "RESTART TIMER",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Black,
+                                    letterSpacing = 1.sp
+                                )
+                            }
                         }
                     }
                 }

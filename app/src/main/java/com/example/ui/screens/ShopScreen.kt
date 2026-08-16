@@ -170,7 +170,7 @@ fun ShopScreen(
                         com.example.ui.components.VibrantGoldenCoin(size = 20.dp)
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "$coins",
+                            text = com.example.util.FormatUtils.formatCoins(coins),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF111111)
@@ -572,7 +572,7 @@ private fun SkinItemCard(
                         )
                         Spacer(modifier = Modifier.width(3.dp))
                         Text(
-                            text = "$price Coins",
+                            text = "${com.example.util.FormatUtils.formatCoins(price)} Coins",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF555555)
@@ -644,7 +644,7 @@ private fun SkinItemCard(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "$price",
+                                text = com.example.util.FormatUtils.formatCoins(price),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Black,
                                 color = if (canAfford) Color.White else Color(0xFF888888)

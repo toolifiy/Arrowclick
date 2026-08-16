@@ -192,7 +192,7 @@ fun HomeScreen(
                             VibrantGoldenCoin(size = 18.dp)
                             Spacer(modifier = Modifier.width(5.dp))
                             Text(
-                                text = "$coins",
+                                text = com.example.util.FormatUtils.formatCoins(coins),
                                 fontSize = if (isCompactScreen) 14.sp else 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White // White text for contrast on dark
