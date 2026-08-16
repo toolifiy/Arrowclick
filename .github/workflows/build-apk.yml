@@ -28,14 +28,17 @@ jobs:
       - name: Install Android Build Tools & Platforms
         run: |
           yes | sdkmanager --licenses || true
-          sdkmanager "platforms;android-36" "build-tools;35.0.0" "platform-tools"
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools" || true
 
       - name: Setup Secrets and Keystore
         run: |
           touch .env
+          touch secrets.properties
+          touch local.defaults.properties
           if [ -f debug.keystore.base64 ]; then
-            base64 -d debug.keystore.base64 > debug.keystore
-          else
+            base64 -d debug.keystore.base64 > debug.keystore 2>/dev/null || base64 --decode debug.keystore.base64 > debug.keystore 2>/dev/null || true
+          fi
+          if [ ! -s debug.keystore ]; then
             keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
 
@@ -46,8 +49,7 @@ jobs:
 
       - name: Build Debug APK
         run: |
-          chmod +x gradlew || true
-          gradle :app:assembleDebug --no-daemon --stacktrace --warning-mode none
+          gradle assembleDebug --no-daemon --stacktrace
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
