@@ -55,6 +55,7 @@ fun ArrowGameCanvas(
     onArrowSpawned: (spawnTimeMs: Long) -> Unit,
     onTipClicked: (reactionTimeMs: Long, tipOffset: Offset) -> Unit,
     onMissClicked: (touchOffset: Offset) -> Unit,
+    onTailClicked: (touchOffset: Offset) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
@@ -76,6 +77,7 @@ fun ArrowGameCanvas(
     val strokeWidthPx = with(density) { skin.strokeWidthDp.dp.toPx() }
     val headWingLengthPx = with(density) { skin.headWingLengthDp.dp.toPx() }
     val hitRadiusPx = with(density) { 68.dp.toPx() }
+    val tailHitRadiusPx = hitRadiusPx * 0.50f // 50% smaller tail hit area as requested!
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val widthPx = with(density) { maxWidth.toPx() }
@@ -129,10 +131,16 @@ fun ArrowGameCanvas(
                         val dy = tapOffset.y - currentArrow.tipY
                         val distance = sqrt((dx * dx + dy * dy).toDouble()).toFloat()
 
+                        val tailDx = tapOffset.x - currentArrow.tailX
+                        val tailDy = tapOffset.y - currentArrow.tailY
+                        val tailDistance = sqrt((tailDx * tailDx + tailDy * tailDy).toDouble()).toFloat()
+
                         if (distance <= hitRadiusPx) {
                             val now = System.currentTimeMillis()
                             val reaction = (now - spawnTimeMs).coerceAtLeast(1L)
                             onTipClicked(reaction, Offset(currentArrow.tipX, currentArrow.tipY))
+                        } else if (tailDistance <= tailHitRadiusPx) {
+                            onTailClicked(tapOffset)
                         } else {
                             onMissClicked(tapOffset)
                         }

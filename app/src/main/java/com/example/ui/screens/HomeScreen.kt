@@ -62,6 +62,7 @@ import java.util.Locale
 @Composable
 fun HomeScreen(
     coins: Int,
+    hearts: Int,
     bestTimeMs: Long,
     totalHits: Int,
     equippedSkin: ArrowSkin,
@@ -143,8 +144,33 @@ fun HomeScreen(
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    // Hearts Badge / Chip
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color(0xFFFFF0F2),
+                        shadowElevation = 0.dp,
+                        modifier = Modifier.testTag("home_hearts_chip")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "❤️",
+                                fontSize = 13.sp
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "$hearts/5",
+                                fontSize = if (isCompactScreen) 13.sp else 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFE91E63)
+                            )
+                        }
+                    }
+
                     // Vibrant Golden Coins Chip
                     Surface(
                         shape = RoundedCornerShape(20.dp),

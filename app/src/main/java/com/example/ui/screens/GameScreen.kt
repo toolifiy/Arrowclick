@@ -2,22 +2,29 @@ package com.example.ui.screens
 
 import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -30,14 +37,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
@@ -55,17 +68,26 @@ import com.example.ui.components.VibrantGoldenCoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.util.Locale
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlinx.coroutines.launch
 
 @Composable
 fun GameScreen(
     skin: ArrowSkin,
     coins: Int,
+    hearts: Int,
     isArrowVisible: Boolean,
     lastReactionTimeMs: Long?,
     showReactionOverlay: Boolean,
     lastHitOffset: Offset?,
     soundEnabled: Boolean,
     hapticEnabled: Boolean,
+    showOutPopup: Boolean,
+    showMockAd: Boolean,
+    onArrowSpawned: () -> Unit,
+    onTailClicked: (touchOffset: Offset) -> Unit,
+    onAdTriggered: () -> Unit,
+    onAdCompleted: () -> Unit,
     onTipClicked: (reactionTimeMs: Long, tipOffset: Offset) -> Unit,
     onMissClicked: (touchOffset: Offset) -> Unit,
     onBackToHome: () -> Unit,
@@ -79,6 +101,8 @@ fun GameScreen(
     // Fast real-time live timer loop ticking every ~16ms while the arrow is waiting for tap
     LaunchedEffect(isArrowVisible, liveSpawnTimeMs) {
         if (isArrowVisible) {
+            liveSpawnTimeMs = System.currentTimeMillis()
+            onArrowSpawned() // Triggers sound beep on arrow spawn!
             while (isActive) {
                 liveElapsedMs = (System.currentTimeMillis() - liveSpawnTimeMs).coerceAtLeast(0L)
                 delay(16L)
@@ -161,25 +185,55 @@ fun GameScreen(
                 )
             }
 
-            // Right: Coins Badge
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = Color(0xFFF5F5F7),
-                shadowElevation = 0.dp,
+            // Right: Hearts and Coins Badges Side-By-Side
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier.align(Alignment.CenterEnd)
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                // Hearts Badge
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color(0xFFFFF0F2),
+                    shadowElevation = 0.dp
                 ) {
-                    VibrantGoldenCoin(size = 18.dp)
-                    Spacer(modifier = Modifier.width(5.dp))
-                    Text(
-                        text = "$coins",
-                        fontSize = if (isCompactScreen) 14.sp else 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF222222)
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "❤️",
+                            fontSize = 13.sp
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(
+                            text = "$hearts/5",
+                            fontSize = if (isCompactScreen) 12.sp else 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFE91E63)
+                        )
+                    }
+                }
+
+                // Coins Badge
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color(0xFFF5F5F7),
+                    shadowElevation = 0.dp
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        VibrantGoldenCoin(size = 16.dp)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "$coins",
+                            fontSize = if (isCompactScreen) 13.sp else 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF222222)
+                        )
+                    }
                 }
             }
         }
@@ -200,6 +254,10 @@ fun GameScreen(
                 onMissClicked = { touchOffset ->
                     if (hapticEnabled) view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                     onMissClicked(touchOffset)
+                },
+                onTailClicked = { touchOffset ->
+                    if (hapticEnabled) view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                    onTailClicked(touchOffset)
                 },
                 modifier = Modifier.fillMaxSize()
             )
@@ -253,23 +311,364 @@ fun GameScreen(
         }
 
         // 4. Bottom Instruction: "TAP THE ARROW TIP!"
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(bottom = if (isCompactScreen) 16.dp else 30.dp)
-                .zIndex(2f),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "TAP THE ARROW TIP!",
-                fontSize = if (isCompactScreen) 14.sp else 16.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 1.5.sp,
-                color = Color(0xFF111111),
-                textDecoration = TextDecoration.Underline,
-                textAlign = TextAlign.Center
-            )
+        if (isArrowVisible) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(bottom = if (isCompactScreen) 16.dp else 30.dp)
+                    .zIndex(2f),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "TAP THE ARROW TIP!",
+                    fontSize = if (isCompactScreen) 14.sp else 16.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.5.sp,
+                    color = Color(0xFF111111),
+                    textDecoration = TextDecoration.Underline,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+        // ==========================================
+        // 5. OUT OF HEARTS 3-SECOND COUNTDOWN OVERLAY
+        // ==========================================
+        if (showOutPopup) {
+            var countdownValue by remember { mutableFloatStateOf(3.0f) }
+            var animatedScale by remember { mutableFloatStateOf(0.8f) }
+            var animatedAlpha by remember { mutableFloatStateOf(0f) }
+
+            LaunchedEffect(Unit) {
+                // Animate entry scale and alpha
+                val animDuration = 250f
+                val animStart = System.currentTimeMillis()
+                launch {
+                    while (true) {
+                        val elapsed = System.currentTimeMillis() - animStart
+                        if (elapsed >= animDuration) {
+                            animatedScale = 1.0f
+                            animatedAlpha = 1.0f
+                            break
+                        }
+                        val progress = elapsed / animDuration
+                        animatedScale = 0.8f + 0.2f * progress
+                        animatedAlpha = progress
+                        delay(16L)
+                    }
+                }
+
+                // Core countdown loop
+                val startTime = System.currentTimeMillis()
+                while (countdownValue > 0f) {
+                    delay(16L)
+                    val passed = (System.currentTimeMillis() - startTime) / 1000f
+                    countdownValue = (3.0f - passed).coerceAtLeast(0f)
+                }
+                // When 3s completes -> Automatically trigger ad flow
+                onAdTriggered()
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0x4D000000).copy(alpha = animatedAlpha * 0.3f)) // Light dark background (not very dark, just slightly dark!)
+                    .zIndex(100f)
+                    .clickable(enabled = false) {}, // absorb clicks
+                contentAlignment = Alignment.Center
+            ) {
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth(0.85f)
+                        .padding(16.dp)
+                        .graphicsLayer(
+                            scaleX = animatedScale,
+                            scaleY = animatedScale,
+                            alpha = animatedAlpha
+                        )
+                        .testTag("out_of_hearts_dialog")
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(26.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "YOU ARE OUT!",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 2.sp,
+                            color = Color(0xFFFF1744)
+                        )
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // Heart & Sweeping Circle Progress Arc
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.size(140.dp)
+                        ) {
+                            Canvas(modifier = Modifier.size(130.dp)) {
+                                // Background circle ring
+                                drawCircle(
+                                    color = Color(0x1FFF1744),
+                                    style = Stroke(width = 6.dp.toPx())
+                                )
+                                // Active Sweeping progress line from Left (180 degrees) clockwise
+                                val sweep = 360f * ((3.0f - countdownValue) / 3.0f)
+                                drawArc(
+                                    color = Color(0xFFFF1744),
+                                    startAngle = 180f,
+                                    sweepAngle = sweep,
+                                    useCenter = false,
+                                    style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round)
+                                )
+                            }
+
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                // Broken heart icon
+                                Text(
+                                    text = "💔",
+                                    fontSize = 44.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = String.format(Locale.US, "%.1fs", countdownValue),
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color(0xFFFF1744)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        Text(
+                            text = "Oops! You missed the tip or touched the tail.",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF666666),
+                            textAlign = TextAlign.Center
+                        )
+
+                        Text(
+                            text = "Watch an ad to continue playing...",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF888888),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // ==========================================
+        // 6. PREMIUM FULLSCREEN MOCK AD OVERLAY
+        // ==========================================
+        if (showMockAd) {
+            var adCountdown by remember { mutableIntStateOf(5) }
+            val isRewardClaimable = adCountdown <= 0
+
+            LaunchedEffect(Unit) {
+                while (adCountdown > 0) {
+                    delay(1000L)
+                    adCountdown--
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF12121A)) // Premium gaming dark theme background
+                    .zIndex(200f)
+                    .clickable(enabled = false) {},
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Ad Header
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = Color(0xFF333344)
+                        ) {
+                            Text(
+                                text = "SPONSORED AD",
+                                color = Color.LightGray,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                            )
+                        }
+
+                        // Close trigger
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(if (isRewardClaimable) Color(0xFFFFD54F) else Color(0x33FFFFFF))
+                                .clickable(enabled = isRewardClaimable) {
+                                    onAdCompleted()
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isRewardClaimable) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Close",
+                                    tint = Color.Black,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            } else {
+                                Text(
+                                    text = "$adCountdown",
+                                    color = Color.White,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    // Ad Core Banner (Visually stunning premium artwork mockup)
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E2C)),
+                        border = BorderStroke(1.5.dp, Color(0xFF3F51B5)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(340.dp)
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            // Tech style vector background
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                drawCircle(
+                                    brush = Brush.radialGradient(
+                                        colors = listOf(Color(0x403F51B5), Color.Transparent),
+                                        center = Offset(size.width / 2f, size.height / 2f),
+                                        radius = size.width * 0.7f
+                                    )
+                                )
+                            }
+
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = "⚔️ RAID ⚔️",
+                                        fontSize = 28.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFFFFD54F),
+                                        letterSpacing = 4.sp
+                                    )
+                                    Text(
+                                        text = "REFLEX LEGENDS",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        letterSpacing = 2.sp
+                                    )
+                                }
+
+                                // Interactive design graphic inside ad
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.PlayArrow,
+                                        contentDescription = null,
+                                        tint = Color(0xFF00E676),
+                                        modifier = Modifier.size(60.dp)
+                                    )
+                                    Column {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            repeat(5) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Star,
+                                                    contentDescription = null,
+                                                    tint = Color(0xFFFFD54F),
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
+                                        }
+                                        Text(
+                                            text = "10M+ Downloads",
+                                            color = Color.Gray,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    text = "Duniya ka sabse premium, highly addictive reflex challenge game! Abhi download karein aur speed records todein.",
+                                    color = Color.LightGray,
+                                    fontSize = 12.sp,
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 16.sp
+                                )
+                            }
+                        }
+                    }
+
+                    // Bottom Call to Action claim button
+                    Button(
+                        onClick = {
+                            if (isRewardClaimable) onAdCompleted()
+                        },
+                        enabled = isRewardClaimable,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF00C853),
+                            disabledContainerColor = Color(0xFF1E3525)
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                    ) {
+                        if (isRewardClaimable) {
+                            Text(
+                                text = "CLAIM 1 FREE HEART ❤️",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White,
+                                letterSpacing = 1.sp
+                            )
+                        } else {
+                            Text(
+                                text = "REWARD IN $adCountdown SECONDS...",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -297,7 +696,7 @@ fun ExitGameConfirmationDialog(
                 border = BorderStroke(1.2.dp, Color(0x33000000)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth(0.85f)
                     .padding(8.dp)
             ) {
                 Column(

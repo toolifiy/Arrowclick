@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.GameRepository
 import com.example.model.ArrowSkin
 import com.example.model.ArrowSkinCatalog
+import com.example.util.SoundManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,11 +31,14 @@ data class GameUiState(
     val showReactionOverlay: Boolean = false,
     val lastHitOffset: Offset? = null,
     val showCoinPopup: Boolean = false,
-    val message: String? = null
+    val message: String? = null,
+    val showOutPopup: Boolean = false, // If true, triggers 3s broken heart circular progress countdown
+    val showMockAd: Boolean = false     // Fullscreen mock ad overlay
 )
 
 class GameViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = GameRepository(application)
+    private val soundManager = SoundManager(application)
 
     val coins: StateFlow<Int> = repository.coins
     val bestTimeMs: StateFlow<Long> = repository.bestTimeMs
@@ -43,6 +47,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     val equippedSkinId: StateFlow<String> = repository.equippedSkinId
     val soundEnabled: StateFlow<Boolean> = repository.soundEnabled
     val hapticEnabled: StateFlow<Boolean> = repository.hapticEnabled
+    val hearts: StateFlow<Int> = repository.hearts
 
     val equippedSkin: StateFlow<ArrowSkin> = repository.equippedSkinId
         .combine(repository.unlockedSkinIds) { id, _ ->
@@ -53,6 +58,20 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
     private var respawnJob: Job? = null
+
+    init {
+        // Collect sound & haptic configurations to soundManager
+        viewModelScope.launch {
+            soundEnabled.collect { enabled ->
+                soundManager.setSoundEnabled(enabled)
+            }
+        }
+        viewModelScope.launch {
+            hapticEnabled.collect { enabled ->
+                soundManager.setHapticEnabled(enabled)
+            }
+        }
+    }
 
     fun setSoundEnabled(enabled: Boolean) {
         repository.setSoundEnabled(enabled)
@@ -74,24 +93,33 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 screen = screen,
                 isArrowVisible = true,
                 showReactionOverlay = false,
-                showCoinPopup = false
+                showCoinPopup = false,
+                showOutPopup = false,
+                showMockAd = false
             )
         } else {
             _uiState.value = _uiState.value.copy(screen = screen)
         }
     }
 
+    fun onArrowSpawned() {
+        soundManager.playSpawnTick()
+    }
+
     fun onTipHit(reactionTimeMs: Long, tipOffset: Offset) {
-        // Cancel any pending respawn
         respawnJob?.cancel()
 
-        // 1. Add +1 Coin
+        // 1. Play success effects
+        soundManager.playSuccessTick()
+        soundManager.playHitFeedback()
+
+        // 2. Add +1 Coin
         repository.addCoins(1)
 
-        // 2. Record reaction time & check best record
+        // 3. Record reaction time & check best record
         repository.recordReactionTime(reactionTimeMs)
 
-        // 3. Hide arrow and show reaction time details for exactly 0.5s (500ms)
+        // 4. Hide arrow and show reaction time details for exactly 0.5s (500ms)
         _uiState.value = _uiState.value.copy(
             isArrowVisible = false,
             lastReactionTimeMs = reactionTimeMs,
@@ -111,12 +139,71 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onMissedTap(offset: Offset) {
-        // Optional miss feedback or sound trigger
+        respawnJob?.cancel()
+        soundManager.playMissFeedback()
+
+        // Deduct 1 Heart
+        val hadHeart = repository.useHeart()
+        val remainingHearts = repository.hearts.value
+
+        if (!hadHeart || remainingHearts <= 0) {
+            // Out of hearts completely! Trigger the circular red loading countdown
+            _uiState.value = _uiState.value.copy(
+                isArrowVisible = false,
+                showReactionOverlay = false,
+                showCoinPopup = false,
+                showOutPopup = true
+            )
+        } else {
+            // Heart deducted, respawn next arrow in 500ms
+            _uiState.value = _uiState.value.copy(
+                isArrowVisible = false,
+                showReactionOverlay = false,
+                showCoinPopup = false
+            )
+            respawnJob = viewModelScope.launch {
+                delay(500L)
+                _uiState.value = _uiState.value.copy(
+                    isArrowVisible = true
+                )
+            }
+        }
+    }
+
+    fun onTailHit(offset: Offset) {
+        respawnJob?.cancel()
+        soundManager.playMissFeedback()
+
+        // Tail hit triggers INSTANT OUT! Deplete remaining hearts to 0 and show countdown
+        repository.setHearts(0)
+        _uiState.value = _uiState.value.copy(
+            isArrowVisible = false,
+            showReactionOverlay = false,
+            showCoinPopup = false,
+            showOutPopup = true
+        )
+    }
+
+    fun triggerMockAd() {
+        _uiState.value = _uiState.value.copy(
+            showOutPopup = false,
+            showMockAd = true
+        )
+    }
+
+    fun onAdCompleted() {
+        // Watch ad completed -> Grant exactly 1 Heart!
+        repository.setHearts(1)
+        _uiState.value = _uiState.value.copy(
+            showMockAd = false,
+            showOutPopup = false,
+            isArrowVisible = true
+        )
+        soundManager.playSuccessTick()
     }
 
     fun buySkin(skin: ArrowSkin) {
         if (unlockedSkinIds.value.contains(skin.id)) {
-            // Already owned, just equip
             repository.equipSkin(skin.id)
             _uiState.value = _uiState.value.copy(message = "Equipped ${skin.name}!")
             return
@@ -142,5 +229,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearMessage() {
         _uiState.value = _uiState.value.copy(message = null)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        soundManager.release()
     }
 }

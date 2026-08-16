@@ -5,6 +5,9 @@ import android.content.SharedPreferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class GameRepository(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("arrow_reflex_prefs", Context.MODE_PRIVATE)
@@ -31,6 +34,54 @@ class GameRepository(context: Context) {
 
     private val _hapticEnabled = MutableStateFlow(prefs.getBoolean(KEY_HAPTIC_ENABLED, true))
     val hapticEnabled: StateFlow<Boolean> = _hapticEnabled.asStateFlow()
+
+    // Hearts state flow (Max 5, restored daily to 5)
+    private val _hearts = MutableStateFlow(5)
+    val hearts: StateFlow<Int> = _hearts.asStateFlow()
+
+    init {
+        checkDailyHeartsReset()
+    }
+
+    private fun checkDailyHeartsReset() {
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+        val lastResetDate = prefs.getString(KEY_LAST_HEART_RESET_DATE, "") ?: ""
+        
+        if (today != lastResetDate) {
+            // New day: Grant 5 fresh hearts!
+            prefs.edit()
+                .putInt(KEY_HEARTS, 5)
+                .putString(KEY_LAST_HEART_RESET_DATE, today)
+                .apply()
+            _hearts.value = 5
+        } else {
+            // Same day: Read remaining saved hearts
+            _hearts.value = prefs.getInt(KEY_HEARTS, 5)
+        }
+    }
+
+    fun useHeart(): Boolean {
+        val current = _hearts.value
+        if (current > 0) {
+            val next = current - 1
+            prefs.edit().putInt(KEY_HEARTS, next).apply()
+            _hearts.value = next
+            return true
+        }
+        return false
+    }
+
+    fun setHearts(amount: Int) {
+        val next = amount.coerceIn(0, 5)
+        prefs.edit().putInt(KEY_HEARTS, next).apply()
+        _hearts.value = next
+    }
+
+    fun addHeart(amount: Int = 1) {
+        val next = (_hearts.value + amount).coerceAtMost(5)
+        prefs.edit().putInt(KEY_HEARTS, next).apply()
+        _hearts.value = next
+    }
 
     fun setSoundEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_SOUND_ENABLED, enabled).apply()
@@ -102,5 +153,7 @@ class GameRepository(context: Context) {
         private const val KEY_UNLOCKED_SKINS = "unlocked_skin_ids_set"
         private const val KEY_SOUND_ENABLED = "sound_effects_enabled"
         private const val KEY_HAPTIC_ENABLED = "haptic_feedback_enabled"
+        private const val KEY_HEARTS = "user_hearts_count"
+        private const val KEY_LAST_HEART_RESET_DATE = "last_heart_reset_date"
     }
 }

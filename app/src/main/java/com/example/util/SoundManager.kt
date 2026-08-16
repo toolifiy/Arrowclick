@@ -2,11 +2,15 @@ package com.example.util
 
 import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioFormat
+import android.media.AudioManager
+import android.media.AudioTrack
 import android.media.SoundPool
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import kotlin.concurrent.thread
 
 /**
  * Clean Sound & Haptic Manager using Android SoundPool with synthesized audio beeps
@@ -46,6 +50,67 @@ class SoundManager(private val context: Context) {
 
     fun setHapticEnabled(enabled: Boolean) {
         isHapticDisabled = !enabled
+    }
+
+    fun playSpawnTick() {
+        if (isMuted) return
+        thread(start = true) {
+            synthesizeAndPlay(1200.0, 22)
+        }
+    }
+
+    fun playSuccessTick() {
+        if (isMuted) return
+        thread(start = true) {
+            synthesizeAndPlay(1900.0, 50)
+        }
+    }
+
+    fun playErrorTick() {
+        if (isMuted) return
+        thread(start = true) {
+            synthesizeAndPlay(350.0, 110)
+        }
+    }
+
+    private fun synthesizeAndPlay(frequency: Double, durationMs: Int) {
+        val sampleRate = 44100
+        val numSamples = (durationMs * sampleRate / 1000)
+        val sample = DoubleArray(numSamples)
+        val generatedSnd = ShortArray(numSamples)
+
+        for (i in 0 until numSamples) {
+            val envelope = if (i < numSamples * 0.15) {
+                i / (numSamples * 0.15)
+            } else if (i > numSamples * 0.70) {
+                (numSamples - i) / (numSamples * 0.30)
+            } else {
+                1.0
+            }
+            sample[i] = Math.sin(2.0 * Math.PI * i / (sampleRate / frequency)) * envelope
+        }
+
+        for (i in 0 until numSamples) {
+            generatedSnd[i] = (sample[i] * 32767).toInt().toShort()
+        }
+
+        try {
+            val audioTrack = AudioTrack(
+                AudioManager.STREAM_MUSIC,
+                sampleRate,
+                AudioFormat.CHANNEL_OUT_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                generatedSnd.size * 2,
+                AudioTrack.MODE_STATIC
+            )
+            audioTrack.write(generatedSnd, 0, generatedSnd.size)
+            audioTrack.play()
+
+            // Wait until done and release
+            Thread.sleep(durationMs + 60L)
+            audioTrack.stop()
+            audioTrack.release()
+        } catch (_: Exception) {}
     }
 
     fun playHitFeedback() {
