@@ -144,13 +144,8 @@ fun ShopScreen(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.MonetizationOn,
-                            contentDescription = "Coins",
-                            tint = Color(0xFFFFB300),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        com.example.ui.components.VibrantGoldenCoin(size = 20.dp)
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "$coins",
                             fontSize = 16.sp,

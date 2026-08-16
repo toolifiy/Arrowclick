@@ -57,6 +57,8 @@ fun MainAppContent(viewModel: GameViewModel) {
     val unlockedSkinIds by viewModel.unlockedSkinIds.collectAsState()
     val equippedSkin by viewModel.equippedSkin.collectAsState()
     val equippedSkinId by viewModel.equippedSkinId.collectAsState()
+    val soundEnabled by viewModel.soundEnabled.collectAsState()
+    val hapticEnabled by viewModel.hapticEnabled.collectAsState()
 
     // Handle back button on Android to return to Home screen
     BackHandler(enabled = uiState.screen != AppScreen.HOME) {
@@ -78,6 +80,11 @@ fun MainAppContent(viewModel: GameViewModel) {
                     bestTimeMs = bestTimeMs,
                     totalHits = totalHits,
                     equippedSkin = equippedSkin,
+                    soundEnabled = soundEnabled,
+                    hapticEnabled = hapticEnabled,
+                    onSoundToggle = { viewModel.setSoundEnabled(it) },
+                    onHapticToggle = { viewModel.setHapticEnabled(it) },
+                    onResetStats = { viewModel.resetStats() },
                     onStartGame = { viewModel.navigateTo(AppScreen.GAME) },
                     onOpenShop = { viewModel.navigateTo(AppScreen.SHOP) },
                     modifier = screenModifier
@@ -92,6 +99,8 @@ fun MainAppContent(viewModel: GameViewModel) {
                     lastReactionTimeMs = uiState.lastReactionTimeMs,
                     showReactionOverlay = uiState.showReactionOverlay,
                     lastHitOffset = uiState.lastHitOffset,
+                    soundEnabled = soundEnabled,
+                    hapticEnabled = hapticEnabled,
                     onTipClicked = { reactionTimeMs, tipOffset ->
                         viewModel.onTipHit(reactionTimeMs, tipOffset)
                     },

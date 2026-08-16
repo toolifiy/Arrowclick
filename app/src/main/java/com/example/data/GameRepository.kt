@@ -26,6 +26,31 @@ class GameRepository(context: Context) {
     )
     val unlockedSkinIds: StateFlow<Set<String>> = _unlockedSkinIds.asStateFlow()
 
+    private val _soundEnabled = MutableStateFlow(prefs.getBoolean(KEY_SOUND_ENABLED, true))
+    val soundEnabled: StateFlow<Boolean> = _soundEnabled.asStateFlow()
+
+    private val _hapticEnabled = MutableStateFlow(prefs.getBoolean(KEY_HAPTIC_ENABLED, true))
+    val hapticEnabled: StateFlow<Boolean> = _hapticEnabled.asStateFlow()
+
+    fun setSoundEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_SOUND_ENABLED, enabled).apply()
+        _soundEnabled.value = enabled
+    }
+
+    fun setHapticEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_HAPTIC_ENABLED, enabled).apply()
+        _hapticEnabled.value = enabled
+    }
+
+    fun resetGameStats() {
+        prefs.edit()
+            .putLong(KEY_BEST_TIME, 0L)
+            .putInt(KEY_TOTAL_HITS, 0)
+            .apply()
+        _bestTimeMs.value = 0L
+        _totalHits.value = 0
+    }
+
     fun addCoins(amount: Int = 1) {
         val newCoins = _coins.value + amount
         prefs.edit().putInt(KEY_COINS, newCoins).apply()
@@ -75,5 +100,7 @@ class GameRepository(context: Context) {
         private const val KEY_TOTAL_HITS = "user_total_hits"
         private const val KEY_EQUIPPED_SKIN = "equipped_skin_id"
         private const val KEY_UNLOCKED_SKINS = "unlocked_skin_ids_set"
+        private const val KEY_SOUND_ENABLED = "sound_effects_enabled"
+        private const val KEY_HAPTIC_ENABLED = "haptic_feedback_enabled"
     }
 }

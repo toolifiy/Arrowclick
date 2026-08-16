@@ -41,6 +41,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     val totalHits: StateFlow<Int> = repository.totalHits
     val unlockedSkinIds: StateFlow<Set<String>> = repository.unlockedSkinIds
     val equippedSkinId: StateFlow<String> = repository.equippedSkinId
+    val soundEnabled: StateFlow<Boolean> = repository.soundEnabled
+    val hapticEnabled: StateFlow<Boolean> = repository.hapticEnabled
 
     val equippedSkin: StateFlow<ArrowSkin> = repository.equippedSkinId
         .combine(repository.unlockedSkinIds) { id, _ ->
@@ -51,6 +53,19 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
     private var respawnJob: Job? = null
+
+    fun setSoundEnabled(enabled: Boolean) {
+        repository.setSoundEnabled(enabled)
+    }
+
+    fun setHapticEnabled(enabled: Boolean) {
+        repository.setHapticEnabled(enabled)
+    }
+
+    fun resetStats() {
+        repository.resetGameStats()
+        _uiState.value = _uiState.value.copy(message = "Stats reset successfully!")
+    }
 
     fun navigateTo(screen: AppScreen) {
         respawnJob?.cancel()
