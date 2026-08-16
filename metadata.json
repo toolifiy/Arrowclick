@@ -1,0 +1,6 @@
+{
+  "name": "Arrow Reflex",
+  "description": "A minimalist reaction time game where you tap the tip of rotating arrows to earn coins and unlock custom arrow skins.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
