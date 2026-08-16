@@ -45,11 +45,12 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.7'
+          gradle-version: '8.11.1'
 
       - name: Build Debug APK
         run: |
-          gradle assembleDebug --no-daemon --stacktrace
+          chmod +x gradlew || true
+          gradle assembleDebug --no-daemon --stacktrace --info
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
