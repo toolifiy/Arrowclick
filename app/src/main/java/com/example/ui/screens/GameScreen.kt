@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -74,6 +76,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun GameScreen(
     skin: ArrowSkin,
+    dotSkin: com.example.model.DotSkin,
     coins: Int,
     hearts: Int,
     isArrowVisible: Boolean,
@@ -85,7 +88,6 @@ fun GameScreen(
     showOutPopup: Boolean,
     showMockAd: Boolean,
     onArrowSpawned: () -> Unit,
-    onTailClicked: (touchOffset: Offset) -> Unit,
     onAdTriggered: () -> Unit,
     onAdCompleted: () -> Unit,
     onTipClicked: (reactionTimeMs: Long, tipOffset: Offset) -> Unit,
@@ -243,6 +245,7 @@ fun GameScreen(
         if (isArrowVisible) {
             ArrowGameCanvas(
                 skin = skin,
+                dotSkin = dotSkin,
                 isArrowVisible = true,
                 onArrowSpawned = { _ ->
                     liveElapsedMs = 0L
@@ -254,10 +257,6 @@ fun GameScreen(
                 onMissClicked = { touchOffset ->
                     if (hapticEnabled) view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                     onMissClicked(touchOffset)
-                },
-                onTailClicked = { touchOffset ->
-                    if (hapticEnabled) view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                    onTailClicked(touchOffset)
                 },
                 modifier = Modifier.fillMaxSize()
             )
@@ -687,66 +686,73 @@ fun ExitGameConfirmationDialog(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .background(Color(0x99000000)) // Gorgeous dim background for contrast
+                .padding(24.dp),
             contentAlignment = Alignment.Center
         ) {
             Card(
-                shape = RoundedCornerShape(28.dp),
+                shape = RoundedCornerShape(32.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.5.dp, Color(0x33000000)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
+                border = BorderStroke(2.dp, Color(0xFF111111)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 24.dp),
                 modifier = Modifier
                     .fillMaxWidth(0.95f)
-                    .padding(12.dp)
+                    .widthIn(max = 460.dp)
+                    .graphicsLayer(scaleX = 1.12f, scaleY = 1.12f) // Visually 25% larger!
+                    .testTag("exit_confirmation_dialog")
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(32.dp),
+                        .padding(horizontal = 24.dp, vertical = 28.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         text = "EXIT GAME?",
-                        fontSize = 24.sp,
+                        fontSize = 22.sp,
                         fontWeight = FontWeight.Black,
-                        letterSpacing = 2.0.sp,
+                        letterSpacing = 2.5.sp,
                         color = Color(0xFF111111)
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     Text(
                         text = "Do you want to return to the home screen?",
-                        fontSize = 16.sp,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF555555),
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        lineHeight = 20.sp
                     )
 
                     Spacer(modifier = Modifier.height(28.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Resume Button
                         OutlinedButton(
                             onClick = onResume,
-                            shape = RoundedCornerShape(16.dp),
-                            border = BorderStroke(1.5.dp, Color(0xFF111111)),
+                            shape = RoundedCornerShape(18.dp),
+                            border = BorderStroke(2.dp, Color(0xFF111111)),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 containerColor = Color.White,
                                 contentColor = Color(0xFF111111)
                             ),
+                            contentPadding = PaddingValues(horizontal = 4.dp),
                             modifier = Modifier
                                 .weight(1f)
-                                .height(58.dp)
+                                .height(62.dp)
                         ) {
                             Text(
                                 text = "RESUME",
-                                fontSize = 16.sp,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Black,
-                                letterSpacing = 1.sp,
+                                letterSpacing = 0.5.sp,
+                                maxLines = 1,
                                 color = Color(0xFF111111)
                             )
                         }
@@ -754,20 +760,22 @@ fun ExitGameConfirmationDialog(
                         // Exit Button
                         Button(
                             onClick = onExit,
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(18.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color(0xFF111111),
                                 contentColor = Color.White
                             ),
+                            contentPadding = PaddingValues(horizontal = 4.dp),
                             modifier = Modifier
                                 .weight(1f)
-                                .height(58.dp)
+                                .height(62.dp)
                         ) {
                             Text(
                                 text = "EXIT",
-                                fontSize = 16.sp,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Black,
-                                letterSpacing = 1.sp,
+                                letterSpacing = 0.5.sp,
+                                maxLines = 1,
                                 color = Color.White
                             )
                         }

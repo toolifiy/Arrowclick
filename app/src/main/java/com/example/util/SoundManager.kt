@@ -65,7 +65,7 @@ class SoundManager(private val context: Context) {
 
     private fun synthesizeAndPlaySuccessClick() {
         val sampleRate = 44100
-        val durationMs = 60
+        val durationMs = 120
         val numSamples = (durationMs * sampleRate / 1000)
         val sample = DoubleArray(numSamples)
         val generatedSnd = ShortArray(numSamples)
@@ -74,21 +74,26 @@ class SoundManager(private val context: Context) {
             val t = i.toDouble() / sampleRate
             val progress = i.toDouble() / numSamples
             
-            // Dual tone sweep: 1100Hz -> 300Hz & 600Hz -> 200Hz
-            val sweepRate1 = -800.0 / (durationMs / 1000.0)
-            val sweepRate2 = -400.0 / (durationMs / 1000.0)
-            
-            val phase1 = 2.0 * Math.PI * (1100.0 * t + 0.5 * sweepRate1 * t * t)
-            val phase2 = 2.0 * Math.PI * (600.0 * t + 0.5 * sweepRate2 * t * t)
-            
-            // Fast attack, exponential decay for juicy organic bubble pluck sound
-            val envelope = if (progress < 0.10) {
-                progress / 0.10
+            // Sweet arcade metallic bell / high quality ping tick
+            // Sweeps UP slightly from 880Hz to 1100Hz (highly rewarding and satisfying)
+            val freq1 = 880.0 + (220.0 * progress)
+            // Harmonious overtone at 1.5x (perfect fifth) and 2.0x (perfect octave) for rich timbre
+            val freq2 = freq1 * 1.5
+            val freq3 = freq1 * 2.0
+
+            val phase1 = 2.0 * Math.PI * freq1 * t
+            val phase2 = 2.0 * Math.PI * freq2 * t
+            val phase3 = 2.0 * Math.PI * freq3 * t
+
+            // Exponential decay for clean, bell-like ping
+            val envelope = if (progress < 0.05) {
+                progress / 0.05 // ultra fast attack (2ms)
             } else {
-                Math.exp(-4.5 * (progress - 0.10))
+                Math.exp(-6.5 * (progress - 0.05)) // beautiful bell decay
             }
-            
-            val wave = 0.6 * Math.sin(phase1) + 0.4 * Math.sin(phase2)
+
+            // Mix frequencies for a crisp, high-quality, metallic-wooden chime (Perfect Tap Sound)
+            val wave = 0.5 * Math.sin(phase1) + 0.35 * Math.sin(phase2) + 0.15 * Math.sin(phase3)
             sample[i] = wave * envelope
         }
 

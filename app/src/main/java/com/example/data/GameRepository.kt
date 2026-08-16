@@ -29,6 +29,14 @@ class GameRepository(context: Context) {
     )
     val unlockedSkinIds: StateFlow<Set<String>> = _unlockedSkinIds.asStateFlow()
 
+    private val _equippedDotId = MutableStateFlow(prefs.getString(KEY_EQUIPPED_DOT, "dot_classic") ?: "dot_classic")
+    val equippedDotId: StateFlow<String> = _equippedDotId.asStateFlow()
+
+    private val _unlockedDotIds = MutableStateFlow(
+        prefs.getStringSet(KEY_UNLOCKED_DOTS, setOf("dot_classic")) ?: setOf("dot_classic")
+    )
+    val unlockedDotIds: StateFlow<Set<String>> = _unlockedDotIds.asStateFlow()
+
     private val _soundEnabled = MutableStateFlow(prefs.getBoolean(KEY_SOUND_ENABLED, true))
     val soundEnabled: StateFlow<Boolean> = _soundEnabled.asStateFlow()
 
@@ -145,12 +153,30 @@ class GameRepository(context: Context) {
         _equippedSkinId.value = skinId
     }
 
+    fun unlockDot(dotId: String): Boolean {
+        val current = _unlockedDotIds.value.toMutableSet()
+        if (!current.contains(dotId)) {
+            current.add(dotId)
+            prefs.edit().putStringSet(KEY_UNLOCKED_DOTS, current).apply()
+            _unlockedDotIds.value = current
+            return true
+        }
+        return false
+    }
+
+    fun equipDot(dotId: String) {
+        prefs.edit().putString(KEY_EQUIPPED_DOT, dotId).apply()
+        _equippedDotId.value = dotId
+    }
+
     companion object {
         private const val KEY_COINS = "user_coins"
         private const val KEY_BEST_TIME = "user_best_time_ms"
         private const val KEY_TOTAL_HITS = "user_total_hits"
         private const val KEY_EQUIPPED_SKIN = "equipped_skin_id"
         private const val KEY_UNLOCKED_SKINS = "unlocked_skin_ids_set"
+        private const val KEY_EQUIPPED_DOT = "equipped_dot_id"
+        private const val KEY_UNLOCKED_DOTS = "unlocked_dot_ids_set"
         private const val KEY_SOUND_ENABLED = "sound_effects_enabled"
         private const val KEY_HAPTIC_ENABLED = "haptic_feedback_enabled"
         private const val KEY_HEARTS = "user_hearts_count"

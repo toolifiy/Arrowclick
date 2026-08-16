@@ -56,6 +56,7 @@ fun ArrowGameCanvas(
     onTipClicked: (reactionTimeMs: Long, tipOffset: Offset) -> Unit,
     onMissClicked: (touchOffset: Offset) -> Unit,
     onTailClicked: (touchOffset: Offset) -> Unit = {},
+    dotSkin: com.example.model.DotSkin = com.example.model.DotSkinCatalog.CLASSIC,
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
@@ -77,7 +78,6 @@ fun ArrowGameCanvas(
     val strokeWidthPx = with(density) { skin.strokeWidthDp.dp.toPx() }
     val headWingLengthPx = with(density) { skin.headWingLengthDp.dp.toPx() }
     val hitRadiusPx = with(density) { 68.dp.toPx() }
-    val tailHitRadiusPx = hitRadiusPx * 0.50f // 50% smaller tail hit area as requested!
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val widthPx = with(density) { maxWidth.toPx() }
@@ -131,17 +131,12 @@ fun ArrowGameCanvas(
                         val dy = tapOffset.y - currentArrow.tipY
                         val distance = sqrt((dx * dx + dy * dy).toDouble()).toFloat()
 
-                        val tailDx = tapOffset.x - currentArrow.tailX
-                        val tailDy = tapOffset.y - currentArrow.tailY
-                        val tailDistance = sqrt((tailDx * tailDx + tailDy * tailDy).toDouble()).toFloat()
-
                         if (distance <= hitRadiusPx) {
                             val now = System.currentTimeMillis()
                             val reaction = (now - spawnTimeMs).coerceAtLeast(1L)
                             onTipClicked(reaction, Offset(currentArrow.tipX, currentArrow.tipY))
-                        } else if (tailDistance <= tailHitRadiusPx) {
-                            onTailClicked(tapOffset)
                         } else {
+                            // Any touch that is not on the active target tip is counted as a miss immediately!
                             onMissClicked(tapOffset)
                         }
                     }
@@ -155,7 +150,8 @@ fun ArrowGameCanvas(
                     strokeWidthPx = strokeWidthPx,
                     headWingLengthPx = headWingLengthPx,
                     tipPulseScale = tipPulseScale,
-                    density = density
+                    density = density,
+                    dotSkin = dotSkin
                 )
             }
         }
@@ -168,7 +164,8 @@ fun DrawScope.drawSkinObject(
     strokeWidthPx: Float,
     headWingLengthPx: Float,
     tipPulseScale: Float,
-    density: androidx.compose.ui.unit.Density
+    density: androidx.compose.ui.unit.Density,
+    dotSkin: com.example.model.DotSkin
 ) {
     val angleRad = Math.toRadians(pos.angleDeg.toDouble())
     val wingAngleRad = Math.toRadians(skin.headWingAngleDeg.toDouble())
@@ -541,30 +538,185 @@ fun DrawScope.drawSkinObject(
         )
     }
 
-    // DRAW GLOWING TIP (THE CLICK TARGET!)
-    val glowRadiusPx = with(density) { skin.glowRadiusDp.dp.toPx() } * tipPulseScale
+    // DRAW GLOWING TIP (THE CLICK TARGET!) USING SELECTED DOT SKIN
+    val glowRadiusPx = with(density) { dotSkin.glowRadiusDp.dp.toPx() } * tipPulseScale
     val coreRadiusPx = with(density) { 8.dp.toPx() }
+    val centerOffset = Offset(pos.tipX, pos.tipY)
 
-    // Outer soft glow halo
-    drawCircle(
-        color = skin.tipGlowColor.copy(alpha = 0.45f),
-        radius = glowRadiusPx,
-        center = Offset(pos.tipX, pos.tipY)
-    )
+    when (dotSkin.style) {
+        com.example.model.DotStyle.CLASSIC_TARGET -> {
+            drawCircle(
+                color = dotSkin.glowColor.copy(alpha = 0.45f),
+                radius = glowRadiusPx,
+                center = centerOffset
+            )
+            drawCircle(
+                color = dotSkin.glowColor.copy(alpha = 0.85f),
+                radius = coreRadiusPx * 1.4f,
+                center = centerOffset
+            )
+            drawCircle(
+                color = dotSkin.centerColor,
+                radius = coreRadiusPx,
+                center = centerOffset
+            )
+        }
+        com.example.model.DotStyle.ELECTRIC_RING -> {
+            drawCircle(
+                color = dotSkin.glowColor.copy(alpha = 0.3f),
+                radius = glowRadiusPx * 1.2f,
+                center = centerOffset
+            )
+            drawCircle(
+                color = dotSkin.glowColor,
+                radius = coreRadiusPx * 1.8f * tipPulseScale,
+                center = centerOffset,
+                style = Stroke(width = with(density) { 3.dp.toPx() })
+            )
+            drawCircle(
+                color = dotSkin.centerColor,
+                radius = coreRadiusPx * 0.9f,
+                center = centerOffset
+            )
+        }
+        com.example.model.DotStyle.STAR_BURST -> {
+            drawCircle(
+                color = dotSkin.glowColor.copy(alpha = 0.4f),
+                radius = glowRadiusPx,
+                center = centerOffset
+            )
+            val rayLength = coreRadiusPx * 3.5f * tipPulseScale
+            drawLine(
+                color = dotSkin.glowColor,
+                start = Offset(pos.tipX - rayLength, pos.tipY),
+                end = Offset(pos.tipX + rayLength, pos.tipY),
+                strokeWidth = with(density) { 3.dp.toPx() },
+                cap = StrokeCap.Round
+            )
+            drawLine(
+                color = dotSkin.glowColor,
+                start = Offset(pos.tipX, pos.tipY - rayLength),
+                end = Offset(pos.tipX, pos.tipY + rayLength),
+                strokeWidth = with(density) { 3.dp.toPx() },
+                cap = StrokeCap.Round
+            )
+            drawCircle(
+                color = dotSkin.centerColor,
+                radius = coreRadiusPx * 1.1f,
+                center = centerOffset
+            )
+        }
+        com.example.model.DotStyle.COSMIC_SINGULARITY -> {
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(dotSkin.centerColor, dotSkin.glowColor, Color.Transparent),
+                    center = centerOffset,
+                    radius = glowRadiusPx * 1.3f
+                ),
+                radius = glowRadiusPx * 1.3f,
+                center = centerOffset
+            )
+            drawCircle(
+                color = Color(0xFF111122),
+                radius = coreRadiusPx * 1.1f,
+                center = centerOffset
+            )
+            drawCircle(
+                color = dotSkin.glowColor,
+                radius = coreRadiusPx * 1.2f,
+                center = centerOffset,
+                style = Stroke(width = with(density) { 2.dp.toPx() })
+            )
+        }
+        com.example.model.DotStyle.MOLTEN_SUN -> {
+            drawCircle(
+                color = dotSkin.glowColor.copy(alpha = 0.25f),
+                radius = glowRadiusPx * 1.4f,
+                center = centerOffset
+            )
+            drawCircle(
+                color = dotSkin.glowColor.copy(alpha = 0.65f),
+                radius = glowRadiusPx * 0.9f,
+                center = centerOffset
+            )
+            drawCircle(
+                color = dotSkin.centerColor,
+                radius = coreRadiusPx * 1.4f * tipPulseScale,
+                center = centerOffset
+            )
+        }
+        com.example.model.DotStyle.MATRIX_RADAR -> {
+            drawCircle(
+                color = dotSkin.glowColor.copy(alpha = 0.7f),
+                radius = coreRadiusPx * 2.2f * tipPulseScale,
+                center = centerOffset,
+                style = Stroke(width = with(density) { 1.5.dp.toPx() })
+            )
+            val lineOffset = coreRadiusPx * 2.8f
+            drawLine(
+                color = dotSkin.glowColor,
+                start = Offset(pos.tipX - lineOffset, pos.tipY),
+                end = Offset(pos.tipX + lineOffset, pos.tipY),
+                strokeWidth = with(density) { 1.dp.toPx() }
+            )
+            drawLine(
+                color = dotSkin.glowColor,
+                start = Offset(pos.tipX, pos.tipY - lineOffset),
+                end = Offset(pos.tipX, pos.tipY + lineOffset),
+                strokeWidth = with(density) { 1.dp.toPx() }
+            )
+            drawCircle(
+                color = dotSkin.centerColor,
+                radius = coreRadiusPx * 0.6f,
+                center = centerOffset
+            )
+        }
+        com.example.model.DotStyle.RAINBOW_CHROMA -> {
+            val offsetVal = (3.dp.toPx() * tipPulseScale)
+            drawCircle(
+                color = Color.Red.copy(alpha = 0.7f),
+                radius = coreRadiusPx * 1.5f,
+                center = Offset(pos.tipX - offsetVal, pos.tipY - offsetVal)
+            )
+            drawCircle(
+                color = Color.Green.copy(alpha = 0.7f),
+                radius = coreRadiusPx * 1.5f,
+                center = Offset(pos.tipX + offsetVal, pos.tipY)
+            )
+            drawCircle(
+                color = Color.Blue.copy(alpha = 0.7f),
+                radius = coreRadiusPx * 1.5f,
+                center = Offset(pos.tipX, pos.tipY + offsetVal)
+            )
+            drawCircle(
+                color = Color.White,
+                radius = coreRadiusPx * 0.7f,
+                center = centerOffset
+            )
+        }
+        com.example.model.DotStyle.TECH_HEXAGON -> {
+            val hexPath = Path()
+            val radius = coreRadiusPx * 2.2f * tipPulseScale
+            for (i in 0..5) {
+                val angle = Math.toRadians((i * 60).toDouble())
+                val hx = (pos.tipX + radius * cos(angle)).toFloat()
+                val hy = (pos.tipY + radius * sin(angle)).toFloat()
+                if (i == 0) hexPath.moveTo(hx, hy) else hexPath.lineTo(hx, hy)
+            }
+            hexPath.close()
 
-    // Mid glow ring
-    drawCircle(
-        color = skin.tipGlowColor.copy(alpha = 0.85f),
-        radius = coreRadiusPx * 1.4f,
-        center = Offset(pos.tipX, pos.tipY)
-    )
-
-    // Vibrant hot center core
-    drawCircle(
-        color = skin.tipCenterColor,
-        radius = coreRadiusPx,
-        center = Offset(pos.tipX, pos.tipY)
-    )
+            drawPath(
+                path = hexPath,
+                color = dotSkin.glowColor,
+                style = Stroke(width = with(density) { 2.5.dp.toPx() })
+            )
+            drawCircle(
+                color = dotSkin.centerColor,
+                radius = coreRadiusPx,
+                center = centerOffset
+            )
+        }
+    }
 }
 
 private fun DrawScope.drawClassicHead(

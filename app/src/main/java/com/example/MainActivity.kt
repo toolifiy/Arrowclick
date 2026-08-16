@@ -68,6 +68,9 @@ fun MainAppContent(viewModel: GameViewModel) {
     val unlockedSkinIds by viewModel.unlockedSkinIds.collectAsState()
     val equippedSkin by viewModel.equippedSkin.collectAsState()
     val equippedSkinId by viewModel.equippedSkinId.collectAsState()
+    val unlockedDotIds by viewModel.unlockedDotIds.collectAsState()
+    val equippedDot by viewModel.equippedDot.collectAsState()
+    val equippedDotId by viewModel.equippedDotId.collectAsState()
     val soundEnabled by viewModel.soundEnabled.collectAsState()
     val hapticEnabled by viewModel.hapticEnabled.collectAsState()
     val hearts by viewModel.hearts.collectAsState()
@@ -140,6 +143,7 @@ fun MainAppContent(viewModel: GameViewModel) {
                 AppScreen.GAME -> {
                     GameScreen(
                         skin = equippedSkin,
+                        dotSkin = equippedDot,
                         coins = coins,
                         hearts = hearts,
                         isArrowVisible = uiState.isArrowVisible,
@@ -151,7 +155,6 @@ fun MainAppContent(viewModel: GameViewModel) {
                         showOutPopup = uiState.showOutPopup,
                         showMockAd = uiState.showMockAd,
                         onArrowSpawned = { viewModel.onArrowSpawned() },
-                        onTailClicked = { offset -> viewModel.onTailHit(offset) },
                         onAdTriggered = { viewModel.triggerMockAd() },
                         onAdCompleted = { viewModel.onAdCompleted() },
                         onTipClicked = { reactionTimeMs, tipOffset ->
@@ -172,6 +175,10 @@ fun MainAppContent(viewModel: GameViewModel) {
                         equippedSkinId = equippedSkinId,
                         onBuySkin = { skin -> viewModel.buySkin(skin) },
                         onEquipSkin = { skinId -> viewModel.equipSkin(skinId) },
+                        unlockedDotIds = unlockedDotIds,
+                        equippedDotId = equippedDotId,
+                        onBuyDot = { dot -> viewModel.buyDot(dot) },
+                        onEquipDot = { dotId -> viewModel.equipDot(dotId) },
                         onBack = { viewModel.navigateTo(AppScreen.HOME) },
                         message = uiState.message,
                         onClearMessage = { viewModel.clearMessage() },

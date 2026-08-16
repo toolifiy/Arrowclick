@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.GameRepository
 import com.example.model.ArrowSkin
 import com.example.model.ArrowSkinCatalog
+import com.example.model.DotSkin
+import com.example.model.DotSkinCatalog
 import com.example.util.SoundManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -53,6 +55,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         .combine(repository.unlockedSkinIds) { id, _ ->
             ArrowSkinCatalog.getSkinById(id)
         }.stateIn(viewModelScope, SharingStarted.Eagerly, ArrowSkinCatalog.CLASSIC)
+
+    val unlockedDotIds: StateFlow<Set<String>> = repository.unlockedDotIds
+    val equippedDotId: StateFlow<String> = repository.equippedDotId
+
+    val equippedDot: StateFlow<DotSkin> = repository.equippedDotId
+        .combine(repository.unlockedDotIds) { id, _ ->
+            DotSkinCatalog.getSkinById(id)
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, DotSkinCatalog.CLASSIC)
 
     private val _uiState = MutableStateFlow(GameUiState())
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
@@ -226,6 +236,31 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             repository.equipSkin(skinId)
             val skin = ArrowSkinCatalog.getSkinById(skinId)
             _uiState.value = _uiState.value.copy(message = "Equipped ${skin.name}!")
+        }
+    }
+
+    fun buyDot(dot: DotSkin) {
+        if (unlockedDotIds.value.contains(dot.id)) {
+            repository.equipDot(dot.id)
+            _uiState.value = _uiState.value.copy(message = "Equipped ${dot.name}!")
+            return
+        }
+
+        if (repository.deductCoins(dot.price)) {
+            repository.unlockDot(dot.id)
+            repository.equipDot(dot.id)
+            _uiState.value = _uiState.value.copy(message = "Unlocked & Equipped ${dot.name}!")
+        } else {
+            val needed = dot.price - coins.value
+            _uiState.value = _uiState.value.copy(message = "Need $needed more coins to unlock!")
+        }
+    }
+
+    fun equipDot(dotId: String) {
+        if (unlockedDotIds.value.contains(dotId)) {
+            repository.equipDot(dotId)
+            val dot = DotSkinCatalog.getSkinById(dotId)
+            _uiState.value = _uiState.value.copy(message = "Equipped ${dot.name}!")
         }
     }
 
